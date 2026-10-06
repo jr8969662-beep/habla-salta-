@@ -4,68 +4,76 @@
 const CONFIG = {
     translationApi: 'https://api.mymemory.translated.net/get',
     languages: {
-        'en': { source: 'en', target: 'es', name: 'Inglés a Español' },
-        'pt': { source: 'pt', target: 'es', name: 'Portugués a Español' }
+        'auto': { source: 'Autodetect', target: 'es', name: 'Detectar automáticamente', speech: null },
+        'en':   { source: 'en',    target: 'es', name: 'Inglés',    speech: 'en-US' },
+        'pt':   { source: 'pt',    target: 'es', name: 'Portugués', speech: 'pt-BR' },
+        'fr':   { source: 'fr',    target: 'es', name: 'Francés',   speech: 'fr-FR' },
+        'de':   { source: 'de',    target: 'es', name: 'Alemán',    speech: 'de-DE' },
+        'it':   { source: 'it',    target: 'es', name: 'Italiano',  speech: 'it-IT' },
+        'zh':   { source: 'zh-CN', target: 'es', name: 'Chino',     speech: 'zh-CN' },
+        'ja':   { source: 'ja',    target: 'es', name: 'Japonés',   speech: 'ja-JP' },
+        'ru':   { source: 'ru',    target: 'es', name: 'Ruso',      speech: 'ru-RU' },
+        'he':   { source: 'he',    target: 'es', name: 'Hebreo',    speech: 'he-IL' }
     }
 };
 
 // --- Intenciones con direcciones reales de Salta ---
 const INTENTS = [
-    { keywords: ['saeta','tarjeta','cargar','colectivo','bus','recarga'],
+    { keywords: ['saeta','tarjeta','cargar','colectivo','bus','recarga','top up'],
       respuesta_es: 'Podés cargar la tarjeta SAETA en los Centros de Atención al Usuario de Pellegrini 824 o en el Paseo Salta (ex Hiper Libertad), local 2020, 1er piso. También hay cajeros de recarga en San Martín y Buenos Aires, y en la peatonal Florida entre San Martín y Urquiza, disponibles 24 hs. En Casa de Gobierno y Centro Cívico Municipal también podés adquirir y recargar.',
-      respuesta_en: 'You can top up the SAETA card at the Customer Service Centers at Pellegrini 824 or Paseo Salta (ex Hiper Libertad), unit 2020, 1st floor. There are also top-up machines at San Martín & Buenos Aires, and on Florida pedestrian street between San Martín and Urquiza, available 24/7. You can also get and top up cards at Casa de Gobierno and Centro Cívico Municipal.',
-      respuesta_pt: 'Você pode recarregar o cartão SAETA nos Centros de Atendimento ao Usuário na Pellegrini 824 ou no Paseo Salta (ex Hiper Libertad), loja 2020, 1º andar. Também há caixas de recarga em San Martín e Buenos Aires, e na rua de pedestres Florida entre San Martín e Urquiza, disponíveis 24h. Também pode adquirir e recarregar na Casa de Gobierno e no Centro Cívico Municipal.',
+      respuesta_en: 'You can top up the SAETA card at the Customer Service Centers at Pellegrini 824 or Paseo Salta (ex Hiper Libertad), unit 2020, 1st floor. There are also top-up machines at San Martín & Buenos Aires, and on Florida pedestrian street between San Martín and Urquiza, available 24/7.',
+      respuesta_pt: 'Você pode recarregar o cartão SAETA nos Centros de Atendimento ao Usuário na Pellegrini 824 ou no Paseo Salta (ex Hiper Libertad), loja 2020, 1º andar. Também há caixas de recarga em San Martín e Buenos Aires, e na rua de pedestres Florida entre San Martín e Urquiza, disponíveis 24h.',
       categoria: { key: 'amenity', value: 'payment_centre' } },
 
-    { keywords: ['cajero','atm','efectivo','plata','dinero'],
+    { keywords: ['cajero','atm','efectivo','plata','dinero','cash','money'],
       respuesta_es: 'Tenés cajeros automáticos en el centro: Banco Macro en Alvarado 746, Bartolomé Mitre 997, y un lobby 24 hs en Av. Independencia 910 (Centro Cultural Dino Saluzzi). También en el ingreso del Concejo Deliberante, Av. República del Líbano 990.',
       respuesta_en: 'There are ATMs downtown: Banco Macro at Alvarado 746, Bartolomé Mitre 997, and a 24-hour lobby at Av. Independencia 910 (Dino Saluzzi Cultural Center). Also at the entrance of the City Council, Av. República del Líbano 990.',
       respuesta_pt: 'Há caixas eletrônicos no centro: Banco Macro na Alvarado 746, Bartolomé Mitre 997, e um lobby 24h na Av. Independencia 910 (Centro Cultural Dino Saluzzi). Também na entrada do Conselho Deliberativo, Av. República del Líbano 990.',
       categoria: { key: 'amenity', value: 'atm' } },
 
-    { keywords: ['dólar','cambio','exchange','currency','divisa'],
+    { keywords: ['dólar','cambio','exchange','currency','divisa','money exchange'],
       respuesta_es: 'Hay casas de cambio en el centro: en la calle Caseros (varias agencias), en España 604, y cerca de la Plaza 9 de Julio. Western Union en Caseros 1602. Los bancos de la zona también ofrecen cambio.',
       respuesta_en: 'There are currency exchange offices downtown: on Caseros Street (several agencies), at España 604, and near Plaza 9 de Julio. Western Union at Caseros 1602. Local banks also offer exchange services.',
       respuesta_pt: 'Há casas de câmbio no centro: na rua Caseros (várias agências), na España 604, e perto da Plaza 9 de Julio. Western Union na Caseros 1602. Os bancos da região também oferecem câmbio.',
       categoria: { key: 'amenity', value: 'bureau_de_change' } },
 
-    { keywords: ['farmacia','remedio','medicamento','pharmacy'],
+    { keywords: ['farmacia','remedio','medicamento','pharmacy','drugstore'],
       respuesta_es: 'Tenés farmacias en el centro: Farmacity en Alberdi 84 (peatonal), Farmacia del Valle en Entre Ríos 850 y Alvarado, Farmacia Monserrat en España 492 y Urquiza 430. Muchas abren todos los días.',
       respuesta_en: 'There are pharmacies downtown: Farmacity at Alberdi 84 (pedestrian street), Farmacia del Valle at Entre Ríos 850 and Alvarado, Farmacia Monserrat at España 492 and Urquiza 430. Many are open every day.',
       respuesta_pt: 'Há farmácias no centro: Farmacity na Alberdi 84 (rua de pedestres), Farmacia del Valle na Entre Ríos 850 e Alvarado, Farmacia Monserrat na España 492 e Urquiza 430. Muitas abrem todos os dias.',
       categoria: { key: 'amenity', value: 'pharmacy' } },
 
-    { keywords: ['hospital','clínica','emergencia','médico','doctor'],
+    { keywords: ['hospital','clínica','emergencia','médico','doctor','health'],
       respuesta_es: 'El Hospital San Bernardo está en Av. José Tobías 69 (y Mariano Boedo 91). El Hospital Materno Infantil está en Av. Sarmiento 1301. Para emergencias, llamá al 911 o al 107 (SAME).',
       respuesta_en: 'Hospital San Bernardo is at Av. José Tobías 69 (and Mariano Boedo 91). Hospital Materno Infantil is at Av. Sarmiento 1301. For emergencies, call 911 or 107 (SAME).',
       respuesta_pt: 'O Hospital San Bernardo fica na Av. José Tobías 69 (e Mariano Boedo 91). O Hospital Materno Infantil fica na Av. Sarmiento 1301. Para emergências, ligue 911 ou 107 (SAME).',
       categoria: { key: 'amenity', value: 'hospital' } },
 
-    { keywords: ['supermercado','super','vea','carrefour','día','coto'],
+    { keywords: ['supermercado','super','vea','carrefour','día','coto','supermarket','grocery'],
       respuesta_es: 'Tenés Super Extra en Moldes 57 (frente a Plaza Alvarado, abre todos los días de 9 a 22). Supermercado Vea en Florida 28. Carrefour y otros en el centro y shoppings. Supermercado Damesco en Av. Paraguay 1250.',
       respuesta_en: 'There\'s Super Extra at Moldes 57 (across from Plaza Alvarado, open every day from 9 AM to 10 PM). Vea supermarket at Florida 28. Carrefour and others downtown and in malls. Damesco supermarket at Av. Paraguay 1250.',
       respuesta_pt: 'Há Super Extra na Moldes 57 (em frente à Plaza Alvarado, aberto todos os dias das 9h às 22h). Supermercado Vea na Florida 28. Carrefour e outros no centro e shoppings. Supermercado Damesco na Av. Paraguay 1250.',
       categoria: { key: 'shop', value: 'supermarket' } },
 
-    { keywords: ['heladería','helado','ice cream','gelato'],
+    { keywords: ['heladería','helado','ice cream','gelato','sorvete'],
       respuesta_es: 'Las mejores heladerías del centro: Heladería Yusepin en Av. San Martín 118, Gianni Helados en Av. Hipólito Yrigoyen 195, Heladería del Bosque en Av. del Bicentenario 1780, y Helados Tangelo en La Florida 224.',
       respuesta_en: 'The best ice cream shops downtown: Heladería Yusepin at Av. San Martín 118, Gianni Helados at Av. Hipólito Yrigoyen 195, Heladería del Bosque at Av. del Bicentenario 1780, and Helados Tangelo at La Florida 224.',
       respuesta_pt: 'As melhores sorveterias do centro: Heladería Yusepin na Av. San Martín 118, Gianni Helados na Av. Hipólito Yrigoyen 195, Heladería del Bosque na Av. del Bicentenario 1780, e Helados Tangelo na La Florida 224.',
       categoria: { key: 'amenity', value: 'ice_cream' } },
 
-    { keywords: ['museo','maam','museum','cultura'],
+    { keywords: ['museo','maam','museum','cultura','culture'],
       respuesta_es: 'El MAAM (Museo de Arqueología de Alta Montaña) está en Bartolomé Mitre 77. El Museo Histórico del Norte en Caseros 549. El Museo Güemes en España 730. El Museo de Bellas Artes en Av. Belgrano 992.',
       respuesta_en: 'The MAAM (Museum of High Mountain Archaeology) is at Bartolomé Mitre 77. Museo Histórico del Norte at Caseros 549. Museo Güemes at España 730. Museo de Bellas Artes at Av. Belgrano 992.',
       respuesta_pt: 'O MAAM (Museu de Arqueologia de Alta Montanha) fica na Bartolomé Mitre 77. Museo Histórico del Norte na Caseros 549. Museo Güemes na España 730. Museo de Bellas Artes na Av. Belgrano 992.',
       categoria: { key: 'tourism', value: 'museum' } },
 
-    { keywords: ['restaurante','comer','comida','almorzar','cenar'],
+    { keywords: ['restaurante','comer','comida','almorzar','cenar','restaurant','food','eat'],
       respuesta_es: 'La calle Balcarce es el eje gastronómico: La Vieja Estación en Balcarce 875, El Méson en Balcarce 252, La Panadería del Chuña en Balcarce 446, Restaurante Mónaco en Balcarce 401. También hay opciones en la zona de la Plaza 9 de Julio.',
       respuesta_en: 'Balcarce Street is the gastronomic hub: La Vieja Estación at Balcarce 875, El Méson at Balcarce 252, La Panadería del Chuña at Balcarce 446, Restaurante Mónaco at Balcarce 401. There are also options around Plaza 9 de Julio.',
       respuesta_pt: 'A rua Balcarce é o eixo gastronômico: La Vieja Estación na Balcarce 875, El Méson na Balcarce 252, La Panadería del Chuña na Balcarce 446, Restaurante Mónaco na Balcarce 401. Também há opções na região da Plaza 9 de Julio.',
       categoria: { key: 'amenity', value: 'restaurant' } },
 
-    { keywords: ['baño','toilet','sanitario','wc'],
+    { keywords: ['baño','toilet','sanitario','wc','bathroom','restroom'],
       respuesta_es: 'Hay baños públicos en la Galería Paseo del Cabildo (Caseros 521), en la Plaza 9 de Julio, y en la Terminal de Ómnibus. Los shoppings y estaciones de servicio también tienen baños.',
       respuesta_en: 'There are public toilets at Galería Paseo del Cabildo (Caseros 521), at Plaza 9 de Julio, and at the Bus Terminal. Malls and gas stations also have restrooms.',
       respuesta_pt: 'Há banheiros públicos na Galería Paseo del Cabildo (Caseros 521), na Plaza 9 de Julio, e na Terminal de Ônibus. Shoppings e postos de gasolina também têm banheiros.',
@@ -113,39 +121,16 @@ function speak(text, langCode) {
     }
 }
 
-// --- Traducción ---
-async function translateText() {
-    const text = textoEntrada.value.trim();
-    if (!text) {
-        updateStatus('Escribí o dictá algo primero.', true);
-        return;
+// --- Traducción genérica ---
+async function translateText(text, fromLang, toLang) {
+    const url = `${CONFIG.translationApi}?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+    const data = await response.json();
+    if (!data.responseData || !data.responseData.translatedText) {
+        throw new Error('La API no devolvió una traducción válida.');
     }
-
-    const langCode = idiomaSelect.value;
-    const lang = CONFIG.languages[langCode];
-    const url = `${CONFIG.translationApi}?q=${encodeURIComponent(text)}&langpair=${lang.source}|${lang.target}`;
-
-    updateStatus('Traduciendo...');
-    resultadoDiv.classList.add('hidden');
-    intentResponse.classList.add('hidden');
-    mapContainer.classList.add('hidden');
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Error de red: ${response.status}`);
-        const data = await response.json();
-
-        if (data.responseData && data.responseData.translatedText) {
-            translationResult.textContent = data.responseData.translatedText;
-            resultadoDiv.classList.remove('hidden');
-            updateStatus('Traducción completada.');
-        } else {
-            throw new Error('La API no devolvió una traducción válida.');
-        }
-    } catch (error) {
-        console.error('Error en la traducción:', error);
-        updateStatus(`Error: ${error.message}`, true);
-    }
+    return data.responseData.translatedText;
 }
 
 // --- Detección de intenciones ---
@@ -203,9 +188,7 @@ async function searchPlaces(lat, lng, categoria) {
             });
             if (!response.ok) continue;
             const data = await response.json();
-            if (data.elements && data.elements.length > 0) {
-                return data.elements;
-            }
+            if (data.elements && data.elements.length > 0) return data.elements;
         } catch (error) {
             console.warn('Falló el mirror', mirror, error);
         }
@@ -219,7 +202,7 @@ function showPlacesOnMap(places, lat, lng) {
     L.marker([lat, lng]).addTo(markersLayer).bindPopup('Estás aquí');
 
     if (places.length === 0) {
-        placesList.innerHTML = '<li>No se encontraron lugares cercanos.</li>';
+        placesList.innerHTML = '<li>No se encontraron lugares cercanos en el mapa.</li>';
         return;
     }
 
@@ -242,10 +225,26 @@ function showPlacesOnMap(places, lat, lng) {
     if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30] });
 }
 
-// --- Mostrar respuesta de intención ---
-async function showIntentResponse(intent, userLat, userLng) {
-    const targetLang = idiomaSelect.value;
-    const respuestaTarget = intent['respuesta_' + targetLang];
+// --- Respuesta de intención ---
+async function showIntentResponse(intent, userLat, userLng, targetLang) {
+    let respuestaTarget;
+    const langCfg = CONFIG.languages[targetLang];
+
+    if (targetLang === 'auto') {
+        // Sin traducción: mostramos solo español
+        respuestaTarget = intent.respuesta_es;
+    } else if (intent['respuesta_' + targetLang]) {
+        // Tenemos traducción predefinida (en, pt)
+        respuestaTarget = intent['respuesta_' + targetLang];
+    } else {
+        // Traducimos la respuesta al idioma del turista al vuelo
+        try {
+            respuestaTarget = await translateText(intent.respuesta_es, 'es', langCfg.source);
+        } catch (e) {
+            console.warn('No se pudo traducir la respuesta:', e);
+            respuestaTarget = intent.respuesta_es;
+        }
+    }
 
     intentResponse.innerHTML = `
         <p class="intent-es">${intent.respuesta_es}</p>
@@ -253,7 +252,10 @@ async function showIntentResponse(intent, userLat, userLng) {
     `;
     intentResponse.classList.remove('hidden');
     resultadoDiv.classList.add('hidden');
-    speak(respuestaTarget, targetLang === 'en' ? 'en-US' : 'pt-BR');
+
+    // Leer en voz alta en el idioma del turista
+    const speechLang = (langCfg && langCfg.speech) || 'es-ES';
+    if (targetLang !== 'auto') speak(respuestaTarget, speechLang);
 
     mapContainer.classList.remove('hidden');
     if (userLat && userLng && intent.categoria) {
@@ -303,38 +305,72 @@ function setupSpeechRecognition() {
     };
 }
 
-// --- Event Listeners ---
-btnHablar.addEventListener('click', () => {
-    if (!recognition) return;
-    if (isListening) recognition.stop();
-    else {
-        recognition.lang = idiomaSelect.value === 'en' ? 'en-US' : 'pt-BR';
-        recognition.start();
-    }
-});
-
-btnTraducir.addEventListener('click', () => {
+// --- Flujo principal de traducción ---
+async function handleTranslate() {
     const text = textoEntrada.value.trim();
-    const intent = detectIntent(text);
+    if (!text) {
+        updateStatus('Escribí o dictá algo primero.', true);
+        return;
+    }
+
+    const langCode = idiomaSelect.value;
+    const lang = CONFIG.languages[langCode];
+
+    updateStatus('Traduciendo...');
+    resultadoDiv.classList.add('hidden');
+    intentResponse.classList.add('hidden');
+    mapContainer.classList.add('hidden');
+
+    let textoEs;
+    try {
+        textoEs = await translateText(text, lang.source, 'es');
+    } catch (error) {
+        console.error('Error en la traducción:', error);
+        updateStatus(`Error: ${error.message}`, true);
+        return;
+    }
+
+    // ¿La frase en español corresponde a una intención conocida?
+    const intent = detectIntent(textoEs);
+
     if (intent) {
         if (navigator.geolocation) {
             updateStatus('Obteniendo ubicación...');
             navigator.geolocation.getCurrentPosition(
-                (pos) => showIntentResponse(intent, pos.coords.latitude, pos.coords.longitude),
+                (pos) => showIntentResponse(intent, pos.coords.latitude, pos.coords.longitude, langCode),
                 (err) => {
                     console.error('Geolocalización:', err);
                     updateStatus('No se pudo obtener ubicación. Mostrando respuesta general.', true);
-                    showIntentResponse(intent, null, null);
+                    showIntentResponse(intent, null, null, langCode);
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
             );
         } else {
-            showIntentResponse(intent, null, null);
+            showIntentResponse(intent, null, null, langCode);
         }
     } else {
-        translateText();
+        // Traducción normal
+        translationResult.textContent = textoEs;
+        resultadoDiv.classList.remove('hidden');
+        updateStatus('Traducción completada.');
+    }
+}
+
+// --- Event Listeners ---
+btnHablar.addEventListener('click', () => {
+    if (!recognition) return;
+    if (isListening) {
+        recognition.stop();
+    } else {
+        const langCode = idiomaSelect.value;
+        const cfg = CONFIG.languages[langCode];
+        // Si es "auto" o no hay speech definido, usamos el idioma del navegador
+        recognition.lang = (cfg && cfg.speech) || navigator.language || 'en-US';
+        recognition.start();
     }
 });
+
+btnTraducir.addEventListener('click', handleTranslate);
 
 btnEscuchar.addEventListener('click', () => {
     const texto = translationResult.textContent;
