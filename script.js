@@ -17,81 +17,461 @@ const CONFIG = {
     }
 };
 
-// --- Intenciones con direcciones reales de Salta ---
+// --- Intenciones con direcciones reales y coordenadas de Salta ---
 const INTENTS = [
-    // ==== BANCOS (TODOS CON COORDENADAS) ====
-    { keywords: ['banco','bank','bancos','sucursal'],
-      respuesta_es: 'Tenés bancos en el centro: Banco Nación en Florida 575, BBVA Francés en España 642, Galicia en Balcarce 101, Macro en Mitre 997, ICBC en España 771, Credicoop en España 435. Todos abren de lunes a viernes de 8:30 a 13:30.',
-      categoria: { key: 'amenity', value: 'bank' },
-      // Coordenadas aproximadas para el mapa
+    // ==== TRANSPORTE Y TARJETAS ====
+    { keywords: ['saeta','tarjeta','cargar','colectivo','recarga','top up'],
+      respuesta_es: 'Podés cargar la tarjeta SAETA en los Centros de Atención al Usuario de Pellegrini 824 o en el Paseo Salta (ex Hiper Libertad), local 2020, 1er piso. También hay cajeros de recarga en San Martín y Buenos Aires, y en la peatonal Florida entre San Martín y Urquiza, disponibles 24 hs.',
+      respuesta_en: 'You can top up the SAETA card at the Customer Service Centers at Pellegrini 824 or Paseo Salta (ex Hiper Libertad), unit 2020, 1st floor. There are also top-up machines at San Martín & Buenos Aires, and on Florida pedestrian street between San Martín and Urquiza, available 24/7.',
+      respuesta_pt: 'Você pode recarregar o cartão SAETA nos Centros de Atendimento ao Usuário na Pellegrini 824 ou no Paseo Salta (ex Hiper Libertad), loja 2020, 1º andar. Também há caixas de recarga em San Martín e Buenos Aires, e na rua de pedestres Florida entre San Martín e Urquiza, disponíveis 24h.',
+      categoria: { key: 'amenity', value: 'payment_centre' },
       lugares: [
-        { nombre: 'Banco de la Nación', direccion: 'Florida 575', lat: -24.7885, lng: -65.4108 },
-        { nombre: 'BBVA Francés', direccion: 'España 642', lat: -24.7880, lng: -65.4115 },
-        { nombre: 'Banco Galicia', direccion: 'Balcarce 101', lat: -24.7895, lng: -65.4090 },
-        { nombre: 'Banco Macro', direccion: 'Bartolomé Mitre 997', lat: -24.7860, lng: -65.4130 },
-        { nombre: 'ICBC', direccion: 'España 771', lat: -24.7870, lng: -65.4120 },
-        { nombre: 'Credicoop', direccion: 'España 435', lat: -24.7890, lng: -65.4100 }
+        { nombre: 'CAU SAETA', direccion: 'Pellegrini 824', lat: -24.7869, lng: -65.4085 },
+        { nombre: 'CAU SAETA - Paseo Salta', direccion: 'Av. Bicentenario (ex Hiper Libertad), local 2020', lat: -24.7900, lng: -65.3990 },
+        { nombre: 'Cajero SAETA 24hs', direccion: 'San Martín y Buenos Aires', lat: -24.7880, lng: -65.4090 },
+        { nombre: 'Cajero SAETA 24hs', direccion: 'Peatonal Florida entre San Martín y Urquiza', lat: -24.7875, lng: -65.4100 }
+      ] },
+
+    { keywords: ['taxi','remis','uber','cabify','transporte'],
+      respuesta_es: 'Paradas de taxi en Plaza 9 de Julio, Terminal de Ómnibus y Aeropuerto. Remises: Remis del Norte (0387 431-3000), Radio Taxi Salta (0387 431-5555). Uber y Cabify funcionan en la ciudad.',
+      categoria: { key: 'amenity', value: 'taxi' } },
+
+    { keywords: ['terminal','ómnibus','omnibus','bus station','micro'],
+      respuesta_es: 'La Terminal de Ómnibus está en Av. Hipólito Yrigoyen 950. Ahí salen micros a todo el país y al norte argentino.',
+      categoria: { key: 'amenity', value: 'bus_station' },
+      lugares: [
+        { nombre: 'Terminal de Ómnibus de Salta', direccion: 'Av. Hipólito Yrigoyen 950', lat: -24.7990, lng: -65.4000 }
+      ] },
+
+    { keywords: ['aeropuerto','airport','vuelo','avión','vuelos'],
+      respuesta_es: 'El Aeropuerto Internacional Martín Miguel de Güemes está a 8 km del centro, sobre Ruta 51. Hay taxis y remises en la puerta. También podés tomar el colectivo 8A.',
+      categoria: { key: 'aeroway', value: 'aerodrome' },
+      lugares: [
+        { nombre: 'Aeropuerto Martín Miguel de Güemes', direccion: 'Ruta 51, Km 5', lat: -24.8560, lng: -65.4860 }
+      ] },
+
+    { keywords: ['tren','tren a las nubes','nubes','train'],
+      respuesta_es: 'El Tren a las Nubes sale de la Estación Salta, en Ameghino 720. Funciona de martes a domingo, con salidas a las 7:05 hs. Reservas en trenalasnubes.com.ar o en la boletería.',
+      categoria: { key: 'railway', value: 'station' },
+      lugares: [
+        { nombre: 'Estación Tren a las Nubes', direccion: 'Ameghino 720', lat: -24.7930, lng: -65.4020 }
+      ] },
+
+    { keywords: ['teleferico','teleférico','cable car','aerial'],
+      respuesta_es: 'El Teleférico San Bernardo tiene su estación base en San Martín 15, a una cuadra de la Plaza 9 de Julio. Sube al Cerro San Bernardo. Abre todos los días, aproximadamente de 10 a 20 hs.',
+      categoria: { key: 'aerialway', value: 'cable_car' },
+      lugares: [
+        { nombre: 'Teleférico San Bernardo - Estación Base', direccion: 'San Martín 15', lat: -24.7880, lng: -65.4085 }
+      ] },
+
+    { keywords: ['alquiler','auto','car rental','rent a car','alquilar auto'],
+      respuesta_es: 'Alquiler de autos en el centro: Hertz en Buenos Aires 130, Avis en Buenos Aires 176, Localiza en Buenos Aires 132. También hay agencias en el Aeropuerto.',
+      categoria: { key: 'amenity', value: 'car_rental' } },
+
+    { keywords: ['estacionamiento','parking','aparcar','garage'],
+      respuesta_es: 'Estacionamientos en el centro: Parking Plaza en Zuviría, Estacionamiento Cabildo en Caseros, y varios sobre Av. Belgrano y Av. San Martín.',
+      categoria: { key: 'amenity', value: 'parking' } },
+
+    { keywords: ['nafta','combustible','gasolina','bencina','ypf','shell','fuel'],
+      respuesta_es: 'Estaciones YPF en Av. Belgrano 1750, Av. San Martín 1550 y Av. Paraguay. Shell en Av. Bicentenario y Av. Bolivia. Muchas abren 24 hs.',
+      categoria: { key: 'amenity', value: 'fuel' } },
+
+    // ==== ALOJAMIENTO ====
+    { keywords: ['hotel','hostel','hostal','alojamiento','dormir','hospedaje'],
+      respuesta_es: 'Hoteles recomendados: Hotel Alejandro I en Balcarce 252, Sheraton Salta en Av. Ejército del Norte 330, Hotel Salta en Buenos Aires 1, Hotel Solar de la Plaza en Leguizamón 669, Hotel Colonial en Zuviría 6.',
+      respuesta_en: 'Recommended hotels: Hotel Alejandro I at Balcarce 252, Sheraton Salta at Av. Ejército del Norte 330, Hotel Salta at Buenos Aires 1, Hotel Solar de la Plaza at Leguizamón 669, Hotel Colonial at Zuviría 6.',
+      respuesta_pt: 'Hotéis recomendados: Hotel Alejandro I na Balcarce 252, Sheraton Salta na Av. Ejército del Norte 330, Hotel Salta na Buenos Aires 1, Hotel Solar de la Plaza na Leguizamón 669, Hotel Colonial na Zuviría 6.',
+      categoria: { key: 'tourism', value: 'hotel' },
+      lugares: [
+        { nombre: 'Hotel Alejandro I', direccion: 'Balcarce 252', lat: -24.7898, lng: -65.4082 },
+        { nombre: 'Sheraton Salta Hotel', direccion: 'Av. Ejército del Norte 330', lat: -24.7820, lng: -65.4170 },
+        { nombre: 'Hotel Salta', direccion: 'Buenos Aires 1', lat: -24.7889, lng: -65.4092 },
+        { nombre: 'Hotel Solar de la Plaza', direccion: 'Leguizamón 669', lat: -24.7870, lng: -65.4120 },
+        { nombre: 'Hotel Colonial Salta', direccion: 'Facundo de Zuviría 6', lat: -24.7883, lng: -65.4098 }
+      ] },
+
+    // ==== ATRACCIONES TURÍSTICAS ====
+    { keywords: ['cerro','san bernardo','mirador','vista','panorámico'],
+      respuesta_es: 'El Cerro San Bernardo tiene un mirador con vista panorámica de toda la ciudad. Se sube en Teleférico (San Martín 15) o en auto por Av. San Martín. Hay confitería arriba.',
+      categoria: { key: 'tourism', value: 'viewpoint' },
+      lugares: [
+        { nombre: 'Mirador Cerro San Bernardo', direccion: 'Cerro San Bernardo (cima)', lat: -24.7850, lng: -65.3970 }
+      ] },
+
+    { keywords: ['catedral','iglesia','templo','church','parroquia'],
+      respuesta_es: 'La Catedral de Salta está en España 596, frente a la Plaza 9 de Julio. Otras iglesias: San Francisco en Caseros 130, La Viña en Alberdi 283, y el Convento San Bernardo en Caseros 1 (famosa por sus puertas centenarias).',
+      categoria: { key: 'amenity', value: 'place_of_worship' },
+      lugares: [
+        { nombre: 'Catedral de Salta', direccion: 'España 596', lat: -24.7885, lng: -65.4105 },
+        { nombre: 'Iglesia San Francisco', direccion: 'Caseros 130', lat: -24.7895, lng: -65.4095 },
+        { nombre: 'Iglesia La Viña', direccion: 'Alberdi 283', lat: -24.7905, lng: -65.4085 },
+        { nombre: 'Convento San Bernardo', direccion: 'Caseros 1', lat: -24.7920, lng: -65.4070 }
+      ] },
+
+    { keywords: ['plaza','plaza 9 de julio','centro','main square'],
+      respuesta_es: 'La Plaza 9 de Julio es el corazón de Salta. Rodeada por la Catedral, el Cabildo, el Museo Histórico del Norte y el Café del Tiempo. Hay ferias artesanales los fines de semana.',
+      categoria: { key: 'tourism', value: 'attraction' },
+      lugares: [
+        { nombre: 'Plaza 9 de Julio', direccion: 'Centro histórico de Salta', lat: -24.7887, lng: -65.4103 }
+      ] },
+
+    { keywords: ['cabildo','historico','histórico','monumento'],
+      respuesta_es: 'El Cabildo de Salta está en Caseros 549, frente a la Plaza 9 de Julio. Ahí funciona el Museo Histórico del Norte. Entrada libre los miércoles.',
+      categoria: { key: 'historic', value: 'monument' },
+      lugares: [
+        { nombre: 'Cabildo de Salta', direccion: 'Caseros 549', lat: -24.7883, lng: -65.4100 }
+      ] },
+
+    { keywords: ['casino','juego','tragamonedas'],
+      respuesta_es: 'El Casino Salta está en Balcarce 220. Abre todos los días desde las 10 hs hasta la madrugada.',
+      categoria: { key: 'amenity', value: 'casino' },
+      lugares: [
+        { nombre: 'Casino Salta', direccion: 'Balcarce 220', lat: -24.7895, lng: -65.4083 }
+      ] },
+
+    { keywords: ['cine','película','movie'],
+      respuesta_es: 'Cines en Salta: Hoyts en Alto Noa Shopping (Av. Paraguay 2600) y en Paseo Salta (Av. Bicentenario). Cartelera en hoyts.com.ar.',
+      categoria: { key: 'amenity', value: 'cinema' } },
+
+    { keywords: ['teatro','obra','espectáculo'],
+      respuesta_es: 'El Teatro Provincial Juan Carlos Saravia está en Zuviría 70. También hay obras en el Teatro del Huerto (Estados Unidos 155) y el Teatro Municipal.',
+      categoria: { key: 'amenity', value: 'theatre' } },
+
+    { keywords: ['estadio','fútbol','partido','cancha'],
+      respuesta_es: 'El Estadio Padre Ernesto Martearena está en Av. Ibazeta 1300. Ahí juega Central Norte. El Estadio Gigante del Norte está en Lerma 670 (juega Gimnasia y Tiro).',
+      categoria: { key: 'leisure', value: 'stadium' } },
+
+    { keywords: ['cementerio','cemetery'],
+      respuesta_es: 'El Cementerio de la Santa Cruz está en Av. San Martín 1550. Es conocido por sus mausoleos históricos y visitado turísticamente.',
+      categoria: { key: 'amenity', value: 'grave_yard' } },
+
+    // ==== COMPRAS ====
+    { keywords: ['mercado','mercado san miguel','market'],
+      respuesta_es: 'El Mercado San Miguel está en San Martín 611. Abre de lunes a sábado, con productos regionales, empanadas y comidas caseras.',
+      categoria: { key: 'amenity', value: 'marketplace' },
+      lugares: [
+        { nombre: 'Mercado San Miguel', direccion: 'San Martín 611', lat: -24.7905, lng: -65.4065 }
+      ] },
+
+    { keywords: ['artesania','artesanía','souvenir','recuerdo','craft','feria'],
+      respuesta_es: 'El Mercado Artesanal está en Av. San Martín 2555. También hay ferias artesanales en la Plaza 9 de Julio los fines de semana y en el Paseo Balcarce.',
+      categoria: { key: 'shop', value: 'craft' },
+      lugares: [
+        { nombre: 'Mercado Artesanal de Salta', direccion: 'Av. San Martín 2555', lat: -24.7800, lng: -65.4180 }
+      ] },
+
+    { keywords: ['ropa','shopping','tienda','clothes','indumentaria'],
+      respuesta_es: 'Shoppings: Alto Noa (Av. Paraguay 2600) y Paseo Salta (Av. Bicentenario). Tiendas en la peatonal Florida y calle Caseros.',
+      categoria: { key: 'shop', value: 'clothes' } },
+
+    { keywords: ['zapato','zapatilla','calzado','shoes'],
+      respuesta_es: 'Casas de calzado en la peatonal Florida y calle Caseros. También en Alto Noa Shopping.',
+      categoria: { key: 'shop', value: 'shoes' } },
+
+    { keywords: ['libreria','librería','libro','book'],
+      respuesta_es: 'Librerías en el centro: Librería Rayuela en Caseros 1061, Yenny en Alto Noa Shopping y en la peatonal Florida.',
+      categoria: { key: 'shop', value: 'books' } },
+
+    // ==== GASTRONOMÍA ====
+    { keywords: ['empanada','comida típica','regional','locro','humita','tamal'],
+      respuesta_es: 'Empanadas salteñas en Doña Salta (Córdoba 46), La Tacita (Balcarce 402), El Solar del Convento (Caseros 444). Locro y humita en peñas de Balcarce.',
+      categoria: { key: 'amenity', value: 'restaurant' } },
+
+    { keywords: ['café','cafeteria','cafetería','desayuno','cafe'],
+      respuesta_es: 'Cafés del centro: Café del Tiempo (Balcarce 901), Café Martínez (Caseros 111), Cafetería Boston (Caseros 468). Abren desde las 7 hs.',
+      categoria: { key: 'amenity', value: 'cafe' } },
+
+    { keywords: ['bar','pub','peña','cerveza','trago','noche'],
+      respuesta_es: 'La calle Balcarce es la zona de bares y peñas: La Vieja Estación (Balcarce 875), El Solar del Convento (Caseros 444), La Casona del Molino (Luis Burela 1). Todas con música en vivo.',
+      categoria: { key: 'amenity', value: 'bar' } },
+
+    { keywords: ['panaderia','panadería','confiteria','confitería','facturas','pan'],
+      respuesta_es: 'Panaderías en el centro: La Salteña (Caseros 641), Confitería El Molino (Caseros y Mitre), Panadería La Estrella (Alvarado 550).',
+      categoria: { key: 'shop', value: 'bakery' } },
+
+    { keywords: ['pizza','pizzería'],
+      respuesta_es: 'Pizzerías en el centro: Kentucky (Zuviría 460), Pizzería Güemes (España 720), Pizzería Roma (Alvarado 601).',
+      categoria: { key: 'amenity', value: 'fast_food' } },
+
+    // ==== SALUD Y EMERGENCIAS ====
+    { keywords: ['policia','policía','comisaria','911'],
+      respuesta_es: 'Comisaría 1ª en Belgrano 401. Policía Federal en España 725. Para emergencias, llamá al 911. La Policía Turística está en Caseros 417.',
+      categoria: { key: 'amenity', value: 'police' },
+      lugares: [
+        { nombre: 'Comisaría 1ª', direccion: 'Belgrano 401', lat: -24.7895, lng: -65.4088 },
+        { nombre: 'Policía Turística', direccion: 'Caseros 417', lat: -24.7886, lng: -65.4099 }
+      ] },
+
+    { keywords: ['bombero','bomberos','incendio'],
+      respuesta_es: 'Cuartel de Bomberos Voluntarios en Av. San Martín 1852. Emergencias al 100.',
+      categoria: { key: 'amenity', value: 'fire_station' } },
+
+    { keywords: ['farmacia de turno','turno','24 horas'],
+      respuesta_es: 'Farmacias de turno en Salta: consultá el listado en el Colegio de Farmacéuticos (farmaciasalta.org.ar) o llamá al 0800-777-3276. Siempre hay una abierta 24 hs.',
+      categoria: { key: 'amenity', value: 'pharmacy' } },
+
+    // ==== SERVICIOS ====
+    { keywords: ['correo','post office','encomienda','paquete'],
+      respuesta_es: 'El Correo Argentino está en Belgrano 501. Abre de lunes a viernes de 8 a 18 y sábados de 8 a 13.',
+      categoria: { key: 'amenity', value: 'post_office' },
+      lugares: [
+        { nombre: 'Correo Argentino', direccion: 'Belgrano 501', lat: -24.7890, lng: -65.4075 }
+      ] },
+
+    { keywords: ['wifi','internet','locutorio','chip','celular','sim'],
+      respuesta_es: 'WiFi gratis en la Plaza 9 de Julio y en el Paseo Balcarce. Locutorios en el centro (Caseros, Florida). Chips de Claro, Personal y Movistar en kioscos y tiendas oficiales.',
+      categoria: { key: 'amenity', value: 'internet_cafe' } },
+
+    { keywords: ['informacion','información','turistica','turística','tourist info','oficina de turismo'],
+      respuesta_es: 'La Oficina de Información Turística de Salta está en Caseros 419, frente a la Plaza 9 de Julio. Abre todos los días. También hay un puesto en el Aeropuerto.',
+      categoria: { key: 'tourism', value: 'information' },
+      lugares: [
+        { nombre: 'Oficina de Información Turística', direccion: 'Caseros 419', lat: -24.7884, lng: -65.4101 }
+      ] },
+
+    { keywords: ['lavanderia','lavandería','laundry','lavar ropa'],
+      respuesta_es: 'Lavanderías en el centro: Lavandería Florida (Florida 350), Lavandería Mitre (Mitre 850). Muchos hostels también ofrecen el servicio.',
+      categoria: { key: 'shop', value: 'laundry' } },
+
+    { keywords: ['peluqueria','peluquería','barberia','barbería','corte','hair'],
+      respuesta_es: 'Peluquerías y barberías en el centro, sobre calle Caseros y Alvarado. Muchas abren de martes a sábado, de 9 a 20 hs.',
+      categoria: { key: 'shop', value: 'hairdresser' } },
+
+    // ==== BANCOS CON TODAS LAS SUCURSALES ====
+    { keywords: ['banco','bank','bancos','sucursal'],
+      respuesta_es: 'Tenés bancos en el centro: Banco Nación en Florida 575 y Bartolomé Mitre 151, BBVA Francés en España 642, Galicia en Balcarce 101, Macro en Bartolomé Mitre 997 y Alvarado 746, ICBC en España 771, Credicoop en España 435, Columbia en Av. Belgrano 550, Hipotecario en España 701, Industrial en 20 de Febrero 63, Itaú en Bartolomé Mitre 270, Patagonia en Av. Belgrano 737. Todos abren de lunes a viernes de 8:30 a 13:30.',
+      respuesta_en: 'Banks downtown: Banco Nación at Florida 575 and Bartolomé Mitre 151, BBVA Francés at España 642, Galicia at Balcarce 101, Macro at Bartolomé Mitre 997 and Alvarado 746, ICBC at España 771, Credicoop at España 435, Columbia at Av. Belgrano 550, Hipotecario at España 701, Industrial at 20 de Febrero 63, Itaú at Bartolomé Mitre 270, Patagonia at Av. Belgrano 737. All open Monday to Friday from 8:30 AM to 1:30 PM.',
+      respuesta_pt: 'Bancos no centro: Banco Nación na Florida 575 e Bartolomé Mitre 151, BBVA Francés na España 642, Galicia na Balcarce 101, Macro na Bartolomé Mitre 997 e Alvarado 746, ICBC na España 771, Credicoop na España 435, Columbia na Av. Belgrano 550, Hipotecario na España 701, Industrial na 20 de Febrero 63, Itaú na Bartolomé Mitre 270, Patagonia na Av. Belgrano 737. Todos abrem de segunda a sexta das 8h30 às 13h30.',
+      categoria: { key: 'amenity', value: 'bank' },
+      lugares: [
+        { nombre: 'Banco de la Nación', direccion: 'Florida 575', lat: -24.7877, lng: -65.4105 },
+        { nombre: 'Banco de la Nación', direccion: 'Bartolomé Mitre 151', lat: -24.7885, lng: -65.4085 },
+        { nombre: 'BBVA Francés', direccion: 'España 642', lat: -24.7881, lng: -65.4113 },
+        { nombre: 'Banco Galicia', direccion: 'Balcarce 101', lat: -24.7893, lng: -65.4088 },
+        { nombre: 'Banco Macro', direccion: 'Bartolomé Mitre 997', lat: -24.7862, lng: -65.4128 },
+        { nombre: 'Banco Macro', direccion: 'Alvarado 746', lat: -24.7890, lng: -65.4095 },
+        { nombre: 'ICBC', direccion: 'España 771', lat: -24.7876, lng: -65.4119 },
+        { nombre: 'Banco Credicoop', direccion: 'España 435', lat: -24.7888, lng: -65.4101 },
+        { nombre: 'Banco Columbia', direccion: 'Av. Belgrano 550', lat: -24.7900, lng: -65.4075 },
+        { nombre: 'Banco Hipotecario', direccion: 'España 701', lat: -24.7878, lng: -65.4116 },
+        { nombre: 'Banco Industrial', direccion: '20 de Febrero 63', lat: -24.7892, lng: -65.4092 },
+        { nombre: 'Banco Itaú', direccion: 'Bartolomé Mitre 270', lat: -24.7878, lng: -65.4098 },
+        { nombre: 'Banco Patagonia', direccion: 'Av. Belgrano 737', lat: -24.7910, lng: -65.4065 }
       ] },
 
     // ==== CAJEROS AUTOMÁTICOS ====
     { keywords: ['cajero','atm','efectivo','plata','dinero','cash','money'],
-      respuesta_es: 'Tenés cajeros automáticos en el centro: Banco Macro en Alvarado 746, Bartolomé Mitre 997, y un lobby 24 hs en Av. Independencia 910 (Centro Cultural Dino Saluzzi). También en el ingreso del Concejo Deliberante, Av. República del Líbano 990.',
+      respuesta_es: 'Tenés cajeros automáticos en el centro: Banco Macro en Alvarado 746, Bartolomé Mitre 997, y un lobby 24 hs en Av. Independencia 910 (Centro Cultural Dino Saluzzi). También en el ingreso del Concejo Deliberante, Av. República del Líbano 990. Y cajeros en todos los bancos del centro.',
+      respuesta_en: 'ATMs downtown: Banco Macro at Alvarado 746, Bartolomé Mitre 997, and a 24-hour lobby at Av. Independencia 910 (Dino Saluzzi Cultural Center). Also at the entrance of the City Council, Av. República del Líbano 990. And ATMs at all downtown banks.',
+      respuesta_pt: 'Caixas eletrônicos no centro: Banco Macro na Alvarado 746, Bartolomé Mitre 997, e um lobby 24h na Av. Independencia 910 (Centro Cultural Dino Saluzzi). Também na entrada do Conselho Deliberativo, Av. República del Líbano 990. E caixas em todos os bancos do centro.',
       categoria: { key: 'amenity', value: 'atm' },
       lugares: [
         { nombre: 'Cajero Banco Macro', direccion: 'Alvarado 746', lat: -24.7890, lng: -65.4095 },
-        { nombre: 'Cajero Banco Macro', direccion: 'Bartolomé Mitre 997', lat: -24.7860, lng: -65.4130 },
-        { nombre: 'Cajero Banco Macro 24hs', direccion: 'Av. Independencia 910', lat: -24.7850, lng: -65.4140 },
-        { nombre: 'Cajero Banco Macro', direccion: 'Av. República del Líbano 990', lat: -24.7840, lng: -65.4150 }
+        { nombre: 'Cajero Banco Macro', direccion: 'Bartolomé Mitre 997', lat: -24.7862, lng: -65.4128 },
+        { nombre: 'Cajero Macro 24hs', direccion: 'Av. Independencia 910 (CC Dino Saluzzi)', lat: -24.7848, lng: -65.4135 },
+        { nombre: 'Cajero Macro', direccion: 'Av. República del Líbano 990 (Concejo)', lat: -24.7840, lng: -65.4148 },
+        { nombre: 'Cajero Banco Nación', direccion: 'Florida 575', lat: -24.7877, lng: -65.4105 },
+        { nombre: 'Cajero BBVA Francés', direccion: 'España 642', lat: -24.7881, lng: -65.4113 },
+        { nombre: 'Cajero Banco Galicia', direccion: 'Balcarce 101', lat: -24.7893, lng: -65.4088 },
+        { nombre: 'Cajero Banco Patagonia', direccion: 'Av. Belgrano 737', lat: -24.7910, lng: -65.4065 }
       ] },
 
-    // ==== RESTAURANTES (VARIEDAD DE ZONAS) ====
+    // ==== RESTAURANTES VARIADOS ====
     { keywords: ['restaurante','comer','comida','almorzar','cenar','restaurant','food','eat'],
-      respuesta_es: 'Opciones variadas: Doña Salta (empanadas) en Córdoba 46, La Cabrera (parrilla) en Belgrano 354, La Casona del Molino (peña) en Cnel. Luis Burela 1, Trattoria Mamma Mia (pastas) en Pje. Zorrilla 1, El Bodeguero en 20 de Febrero 877, y en Balcarce: La Vieja Estación 875, El Méson 252, Mawi Peña 908.',
+      respuesta_es: 'Opciones variadas: Doña Salta (empanadas) en Córdoba 46, La Cabrera (parrilla) en Belgrano 354, La Casona del Molino (peña) en Cnel. Luis Burela 1, Trattoria Mamma Mia (pastas) en Pje. Zorrilla 1, El Bodeguero en 20 de Febrero 877, Roque García (almacén de vinos) en Entre Ríos 1990. En Balcarce: La Vieja Estación 875, El Méson 252, Mawi Peña 908, Restaurante Mónaco 401.',
+      respuesta_en: 'Varied options: Doña Salta (empanadas) at Córdoba 46, La Cabrera (grill) at Belgrano 354, La Casona del Molino (folk music) at Cnel. Luis Burela 1, Trattoria Mamma Mia (pasta) at Pje. Zorrilla 1, El Bodeguero at 20 de Febrero 877, Roque García (wine store) at Entre Ríos 1990. On Balcarce: La Vieja Estación 875, El Méson 252, Mawi Peña 908, Restaurante Mónaco 401.',
+      respuesta_pt: 'Opções variadas: Doña Salta (empanadas) na Córdoba 46, La Cabrera (churrasco) na Belgrano 354, La Casona del Molino (música folclórica) na Cnel. Luis Burela 1, Trattoria Mamma Mia (massas) na Pje. Zorrilla 1, El Bodeguero na 20 de Febrero 877, Roque García (adega) na Entre Ríos 1990. Na Balcarce: La Vieja Estación 875, El Méson 252, Mawi Peña 908, Restaurante Mónaco 401.',
       categoria: { key: 'amenity', value: 'restaurant' },
       lugares: [
-        { nombre: 'Doña Salta', direccion: 'Córdoba 46', lat: -24.7895, lng: -65.4105 },
-        { nombre: 'La Cabrera', direccion: 'Belgrano 354', lat: -24.7900, lng: -65.4080 },
+        { nombre: 'Doña Salta', direccion: 'Córdoba 46', lat: -24.7898, lng: -65.4108 },
+        { nombre: 'La Cabrera', direccion: 'Belgrano 354', lat: -24.7900, lng: -65.4078 },
         { nombre: 'La Casona del Molino', direccion: 'Cnel. Luis Burela 1', lat: -24.7920, lng: -65.4070 },
         { nombre: 'Trattoria Mamma Mia', direccion: 'Pje. Zorrilla 1', lat: -24.7880, lng: -65.4110 },
-        { nombre: 'El Bodeguero', direccion: '20 de Febrero 877', lat: -24.7910, lng: -65.4090 },
-        { nombre: 'La Vieja Estación', direccion: 'Balcarce 875', lat: -24.7930, lng: -65.4060 },
-        { nombre: 'El Méson', direccion: 'Balcarce 252', lat: -24.7900, lng: -65.4085 },
-        { nombre: 'Mawi Peña', direccion: 'Balcarce 908', lat: -24.7935, lng: -65.4055 }
-      ] },
-
-    // ==== HOTELES ====
-    { keywords: ['hotel','hostel','hostal','alojamiento','dormir','hospedaje'],
-      respuesta_es: 'Hoteles recomendados: Hotel Alejandro I en Balcarce 252, Sheraton Salta en Av. Ejército del Norte 330, Hotel Salta en Buenos Aires 1, Hotel Solar de la Plaza en Leguizamón 669, Hotel Colonial en Zuviría 6.',
-      categoria: { key: 'tourism', value: 'hotel' },
-      lugares: [
-        { nombre: 'Hotel Alejandro I', direccion: 'Balcarce 252', lat: -24.7900, lng: -65.4085 },
-        { nombre: 'Sheraton Salta', direccion: 'Av. Ejército del Norte 330', lat: -24.7850, lng: -65.4150 },
-        { nombre: 'Hotel Salta', direccion: 'Buenos Aires 1', lat: -24.7890, lng: -65.4095 },
-        { nombre: 'Hotel Solar de la Plaza', direccion: 'Leguizamón 669', lat: -24.7870, lng: -65.4115 },
-        { nombre: 'Hotel Colonial', direccion: 'Facundo de Zuviría 6', lat: -24.7885, lng: -65.4105 }
+        { nombre: 'El Bodeguero', direccion: '20 de Febrero 877', lat: -24.7912, lng: -65.4088 },
+        { nombre: 'Roque García', direccion: 'Entre Ríos 1990', lat: -24.7860, lng: -65.4080 },
+        { nombre: 'La Vieja Estación', direccion: 'Balcarce 875', lat: -24.7932, lng: -65.4058 },
+        { nombre: 'El Méson', direccion: 'Balcarce 252', lat: -24.7898, lng: -65.4082 },
+        { nombre: 'Mawi Peña', direccion: 'Balcarce 908', lat: -24.7935, lng: -65.4055 },
+        { nombre: 'Restaurante Mónaco', direccion: 'Balcarce 401', lat: -24.7905, lng: -65.4078 }
       ] },
 
     // ==== SUPERMERCADOS ====
-    { keywords: ['supermercado','super','supermarket','grocery'],
-      respuesta_es: 'Supermercados: Super Extra en Moldes 57 (abre todos los días de 9 a 22), Vea en Florida 28, Damesco en Av. Paraguay 1250, Norte en Av. San Martín 2075.',
+    { keywords: ['supermercado','super','supermarket','grocery','vea','carrefour','día','coto'],
+      respuesta_es: 'Supermercados: Super Extra en Moldes 57 (abre todos los días de 9 a 22), Vea en Florida 28 y Bartolomé Mitre 459, Damesco en Av. Paraguay 1250, Norte en Av. San Martín 2075.',
+      respuesta_en: 'Supermarkets: Super Extra at Moldes 57 (open every day 9 AM–10 PM), Vea at Florida 28 and Bartolomé Mitre 459, Damesco at Av. Paraguay 1250, Norte at Av. San Martín 2075.',
+      respuesta_pt: 'Supermercados: Super Extra na Moldes 57 (aberto todos os dias das 9h às 22h), Vea na Florida 28 e Bartolomé Mitre 459, Damesco na Av. Paraguay 1250, Norte na Av. San Martín 2075.',
       categoria: { key: 'shop', value: 'supermarket' },
       lugares: [
-        { nombre: 'Super Extra', direccion: 'Moldes 57', lat: -24.7890, lng: -65.4070 },
-        { nombre: 'Supermercado Vea', direccion: 'Florida 28', lat: -24.7885, lng: -65.4100 },
-        { nombre: 'Supermercado Damesco', direccion: 'Av. Paraguay 1250', lat: -24.7860, lng: -65.4050 },
+        { nombre: 'Super Extra', direccion: 'Moldes 57', lat: -24.7890, lng: -65.4068 },
+        { nombre: 'Supermercado Vea', direccion: 'Florida 28', lat: -24.7885, lng: -65.4103 },
+        { nombre: 'Supermercado Vea', direccion: 'Bartolomé Mitre 459', lat: -24.7878, lng: -65.4105 },
+        { nombre: 'Supermercado Damesco', direccion: 'Av. Paraguay 1250', lat: -24.7862, lng: -65.4050 },
         { nombre: 'Norte Supermercado', direccion: 'Av. San Martín 2075', lat: -24.7830, lng: -65.4180 }
       ] },
 
     // ==== FARMACIAS ====
     { keywords: ['farmacia','remedio','medicamento','pharmacy','drugstore'],
-      respuesta_es: 'Farmacias en el centro: Farmacity en Alberdi 84 (peatonal), Farmacia del Valle en Entre Ríos 850, Farmacia Monserrat en España 492, Farmacia Sagrada Familia en San Juan 1012, Farmacia San Agustín en Av. San Martín 336.',
+      respuesta_es: 'Farmacias en el centro: Farmacity en Alberdi 84 (peatonal), Farmacia del Valle en Entre Ríos 850 y Alvarado, Farmacia Monserrat en España 492 y Urquiza 430, Farmacia Sagrada Familia en San Juan 1012, Farmacia San Agustín en Av. San Martín 336. Muchas abren todos los días.',
+      respuesta_en: 'Pharmacies downtown: Farmacity at Alberdi 84 (pedestrian street), Farmacia del Valle at Entre Ríos 850 and Alvarado, Farmacia Monserrat at España 492 and Urquiza 430, Farmacia Sagrada Familia at San Juan 1012, Farmacia San Agustín at Av. San Martín 336.',
+      respuesta_pt: 'Farmácias no centro: Farmacity na Alberdi 84, Farmacia del Valle na Entre Ríos 850 e Alvarado, Farmacia Monserrat na España 492 e Urquiza 430, Farmacia Sagrada Familia na San Juan 1012, Farmacia San Agustín na Av. San Martín 336.',
       categoria: { key: 'amenity', value: 'pharmacy' },
       lugares: [
-        { nombre: 'Farmacity', direccion: 'Alberdi 84', lat: -24.7875, lng: -65.4105 },
+        { nombre: 'Farmacity', direccion: 'Alberdi 84 (peatonal)', lat: -24.7875, lng: -65.4105 },
         { nombre: 'Farmacia del Valle', direccion: 'Entre Ríos 850', lat: -24.7865, lng: -65.4120 },
-        { nombre: 'Farmacia Monserrat', direccion: 'España 492', lat: -24.7890, lng: -65.4100 },
+        { nombre: 'Farmacia Monserrat', direccion: 'España 492', lat: -24.7888, lng: -65.4102 },
         { nombre: 'Farmacia Sagrada Familia', direccion: 'San Juan 1012', lat: -24.7855, lng: -65.4130 },
-        { nombre: 'Farmacia San Agustín', direccion: 'Av. San Martín 336', lat: -24.7880, lng: -65.4090 }
+        { nombre: 'Farmacia San Agustín', direccion: 'Av. San Martín 336', lat: -24.7880, lng: -65.4088 }
+      ] },
+
+    // ==== HOSPITALES ====
+    { keywords: ['hospital','clínica','emergencia','médico','doctor','health'],
+      respuesta_es: 'El Hospital San Bernardo está en Av. José Tobías 69 (y Mariano Boedo 91). El Hospital Materno Infantil está en Av. Sarmiento 1301. Para emergencias, llamá al 911 o al 107 (SAME).',
+      respuesta_en: 'Hospital San Bernardo is at Av. José Tobías 69 (and Mariano Boedo 91). Hospital Materno Infantil is at Av. Sarmiento 1301. For emergencies, call 911 or 107 (SAME).',
+      respuesta_pt: 'O Hospital San Bernardo fica na Av. José Tobías 69 (e Mariano Boedo 91). O Hospital Materno Infantil fica na Av. Sarmiento 1301. Para emergências, ligue 911 ou 107 (SAME).',
+      categoria: { key: 'amenity', value: 'hospital' },
+      lugares: [
+        { nombre: 'Hospital San Bernardo', direccion: 'Av. José Tobías 69', lat: -24.7955, lng: -65.3990 },
+        { nombre: 'Hospital Materno Infantil', direccion: 'Av. Sarmiento 1301', lat: -24.7920, lng: -65.4020 }
+      ] },
+
+    // ==== HELADERÍAS ====
+    { keywords: ['heladería','helado','ice cream','gelato','sorvete'],
+      respuesta_es: 'Las mejores heladerías: Heladería Yusepin en Av. San Martín 118, Gianni Helados en Av. Hipólito Yrigoyen 195, Heladería del Bosque en Av. del Bicentenario 1780, y Helados Tangelo en La Florida 224.',
+      respuesta_en: 'Best ice cream shops: Heladería Yusepin at Av. San Martín 118, Gianni Helados at Av. Hipólito Yrigoyen 195, Heladería del Bosque at Av. del Bicentenario 1780, and Helados Tangelo at La Florida 224.',
+      respuesta_pt: 'Melhores sorveterias: Heladería Yusepin na Av. San Martín 118, Gianni Helados na Av. Hipólito Yrigoyen 195, Heladería del Bosque na Av. del Bicentenario 1780, e Helados Tangelo na La Florida 224.',
+      categoria: { key: 'amenity', value: 'ice_cream' },
+      lugares: [
+        { nombre: 'Heladería Yusepin', direccion: 'Av. San Martín 118', lat: -24.7885, lng: -65.4100 },
+        { nombre: 'Gianni Helados', direccion: 'Av. Hipólito Yrigoyen 195', lat: -24.7895, lng: -65.4080 },
+        { nombre: 'Heladería del Bosque', direccion: 'Av. del Bicentenario 1780', lat: -24.7915, lng: -65.4020 },
+        { nombre: 'Helados Tangelo', direccion: 'La Florida 224', lat: -24.7870, lng: -65.4095 }
+      ] },
+
+    // ==== MUSEOS ====
+    { keywords: ['museo','maam','museum','cultura','culture'],
+      respuesta_es: 'El MAAM (Museo de Arqueología de Alta Montaña) está en Bartolomé Mitre 77. El Museo Histórico del Norte en Caseros 549. El Museo Güemes en España 730. El Museo de Bellas Artes en Av. Belgrano 992.',
+      respuesta_en: 'The MAAM (Museum of High Mountain Archaeology) is at Bartolomé Mitre 77. Museo Histórico del Norte at Caseros 549. Museo Güemes at España 730. Museo de Bellas Artes at Av. Belgrano 992.',
+      respuesta_pt: 'O MAAM (Museu de Arqueologia de Alta Montanha) fica na Bartolomé Mitre 77. Museo Histórico del Norte na Caseros 549. Museo Güemes na España 730. Museo de Bellas Artes na Av. Belgrano 992.',
+      categoria: { key: 'tourism', value: 'museum' },
+      lugares: [
+        { nombre: 'MAAM', direccion: 'Bartolomé Mitre 77', lat: -24.7885, lng: -65.4095 },
+        { nombre: 'Museo Histórico del Norte', direccion: 'Caseros 549', lat: -24.7883, lng: -65.4100 },
+        { nombre: 'Museo Güemes', direccion: 'España 730', lat: -24.7874, lng: -65.4118 },
+        { nombre: 'Museo de Bellas Artes', direccion: 'Av. Belgrano 992', lat: -24.7920, lng: -65.4045 }
+      ] },
+
+    // ==== BAÑOS PÚBLICOS ====
+    { keywords: ['baño','toilet','sanitario','wc','bathroom','restroom'],
+      respuesta_es: 'Hay baños públicos en la Galería Paseo del Cabildo (Caseros 521), en la Plaza 9 de Julio, y en la Terminal de Ómnibus. Los shoppings y estaciones de servicio también tienen baños.',
+      respuesta_en: 'Public toilets at Galería Paseo del Cabildo (Caseros 521), at Plaza 9 de Julio, and at the Bus Terminal. Malls and gas stations also have restrooms.',
+      respuesta_pt: 'Banheiros públicos na Galería Paseo del Cabildo (Caseros 521), na Plaza 9 de Julio, e na Terminal de Ônibus. Shoppings e postos também têm banheiros.',
+      categoria: { key: 'amenity', value: 'toilets' },
+      lugares: [
+        { nombre: 'Baños públicos Galería Paseo del Cabildo', direccion: 'Caseros 521', lat: -24.7884, lng: -65.4100 },
+        { nombre: 'Baños públicos Plaza 9 de Julio', direccion: 'Plaza 9 de Julio', lat: -24.7887, lng: -65.4103 },
+        { nombre: 'Baños Terminal de Ómnibus', direccion: 'Av. Hipólito Yrigoyen 950', lat: -24.7990, lng: -65.4000 }
+      ] },
+
+    // ==== UNIVERSIDADES ====
+    { keywords: ['universidad','university','facultad','estudiar'],
+      respuesta_es: 'La Universidad Nacional de Salta (UNSa) está en Av. Bolivia 5150. La Universidad Católica de Salta (UCASAL) en Pellegrini 790.',
+      categoria: { key: 'amenity', value: 'university' },
+      lugares: [
+        { nombre: 'Universidad Nacional de Salta', direccion: 'Av. Bolivia 5150', lat: -24.7730, lng: -65.4170 },
+        { nombre: 'UCASAL', direccion: 'Pellegrini 790', lat: -24.7860, lng: -65.4060 }
+      ] },
+
+    // ==== CINES ====
+    { keywords: ['cine','película','movie'],
+      respuesta_es: 'Cines en Salta: Hoyts en Alto Noa Shopping (Av. Paraguay 2600) y en Paseo Salta (Av. Bicentenario). Cartelera en hoyts.com.ar.',
+      categoria: { key: 'amenity', value: 'cinema' },
+      lugares: [
+        { nombre: 'Hoyts Alto Noa Shopping', direccion: 'Av. Paraguay 2600', lat: -24.7810, lng: -65.4020 },
+        { nombre: 'Hoyts Paseo Salta', direccion: 'Av. Bicentenario', lat: -24.7905, lng: -65.3985 }
+      ] },
+
+    // ==== TEATROS ====
+    { keywords: ['teatro','obra','espectáculo'],
+      respuesta_es: 'El Teatro Provincial Juan Carlos Saravia está en Zuviría 70. También hay obras en el Teatro del Huerto (Estados Unidos 155) y el Teatro Municipal.',
+      categoria: { key: 'amenity', value: 'theatre' },
+      lugares: [
+        { nombre: 'Teatro Provincial', direccion: 'Zuviría 70', lat: -24.7885, lng: -65.4110 },
+        { nombre: 'Teatro del Huerto', direccion: 'Estados Unidos 155', lat: -24.7895, lng: -65.4065 }
+      ] },
+
+    // ==== CORREO ====
+    { keywords: ['correo','post office','encomienda','paquete'],
+      respuesta_es: 'El Correo Argentino está en Belgrano 501. Abre de lunes a viernes de 8 a 18 y sábados de 8 a 13.',
+      categoria: { key: 'amenity', value: 'post_office' },
+      lugares: [
+        { nombre: 'Correo Argentino', direccion: 'Belgrano 501', lat: -24.7890, lng: -65.4075 }
+      ] },
+
+    // ==== PIZZERÍAS ====
+    { keywords: ['pizza','pizzería'],
+      respuesta_es: 'Pizzerías en el centro: Kentucky (Zuviría 460), Pizzería Güemes (España 720), Pizzería Roma (Alvarado 601).',
+      categoria: { key: 'amenity', value: 'fast_food' },
+      lugares: [
+        { nombre: 'Pizzería Kentucky', direccion: 'Zuviría 460', lat: -24.7893, lng: -65.4105 },
+        { nombre: 'Pizzería Güemes', direccion: 'España 720', lat: -24.7874, lng: -65.4119 },
+        { nombre: 'Pizzería Roma', direccion: 'Alvarado 601', lat: -24.7889, lng: -65.4097 }
+      ] },
+
+    // ==== CAFÉS ====
+    { keywords: ['café','cafeteria','cafetería','desayuno','cafe'],
+      respuesta_es: 'Cafés del centro: Café del Tiempo (Balcarce 901), Café Martínez (Caseros 111), Cafetería Boston (Caseros 468). Abren desde las 7 hs.',
+      categoria: { key: 'amenity', value: 'cafe' },
+      lugares: [
+        { nombre: 'Café del Tiempo', direccion: 'Balcarce 901', lat: -24.7933, lng: -65.4057 },
+        { nombre: 'Café Martínez', direccion: 'Caseros 111', lat: -24.7895, lng: -65.4093 },
+        { nombre: 'Cafetería Boston', direccion: 'Caseros 468', lat: -24.7886, lng: -65.4100 }
+      ] },
+
+    // ==== BARES Y PEÑAS ====
+    { keywords: ['bar','pub','peña','cerveza','trago','noche'],
+      respuesta_es: 'La calle Balcarce es la zona de bares y peñas: La Vieja Estación (Balcarce 875), El Solar del Convento (Caseros 444), La Casona del Molino (Luis Burela 1). Todas con música en vivo.',
+      categoria: { key: 'amenity', value: 'bar' },
+      lugares: [
+        { nombre: 'La Vieja Estación', direccion: 'Balcarce 875', lat: -24.7932, lng: -65.4058 },
+        { nombre: 'El Solar del Convento', direccion: 'Caseros 444', lat: -24.7885, lng: -65.4101 },
+        { nombre: 'La Casona del Molino', direccion: 'Cnel. Luis Burela 1', lat: -24.7920, lng: -65.4070 }
+      ] },
+
+    // ==== PANADERÍAS ====
+    { keywords: ['panaderia','panadería','confiteria','confitería','facturas','pan'],
+      respuesta_es: 'Panaderías en el centro: La Salteña (Caseros 641), Confitería El Molino (Caseros y Mitre), Panadería La Estrella (Alvarado 550).',
+      categoria: { key: 'shop', value: 'bakery' },
+      lugares: [
+        { nombre: 'Panadería La Salteña', direccion: 'Caseros 641', lat: -24.7880, lng: -65.4103 },
+        { nombre: 'Confitería El Molino', direccion: 'Caseros y Mitre', lat: -24.7878, lng: -65.4106 },
+        { nombre: 'Panadería La Estrella', direccion: 'Alvarado 550', lat: -24.7888, lng: -65.4098 }
+      ] },
+
+    // ==== POLICÍA Y EMERGENCIAS ====
+    { keywords: ['policia','policía','comisaria','911','emergencia policial'],
+      respuesta_es: 'Comisaría 1ª en Belgrano 401. Policía Federal en España 725. Para emergencias, llamá al 911. La Policía Turística está en Caseros 417.',
+      categoria: { key: 'amenity', value: 'police' },
+      lugares: [
+        { nombre: 'Comisaría 1ª', direccion: 'Belgrano 401', lat: -24.7895, lng: -65.4088 },
+        { nombre: 'Policía Federal', direccion: 'España 725', lat: -24.7874, lng: -65.4119 },
+        { nombre: 'Policía Turística', direccion: 'Caseros 417', lat: -24.7886, lng: -65.4099 }
+      ] },
+
+    // ==== BOMBEROS ====
+    { keywords: ['bombero','bomberos','incendio'],
+      respuesta_es: 'Cuartel de Bomberos Voluntarios en Av. San Martín 1852. Emergencias al 100.',
+      categoria: { key: 'amenity', value: 'fire_station' },
+      lugares: [
+        { nombre: 'Bomberos Voluntarios Salta', direccion: 'Av. San Martín 1852', lat: -24.7830, lng: -65.4160 }
+      ] },
+
+    // ==== INFORMACIÓN TURÍSTICA ====
+    { keywords: ['informacion','información','turistica','turística','tourist info','oficina de turismo'],
+      respuesta_es: 'La Oficina de Información Turística de Salta está en Caseros 419, frente a la Plaza 9 de Julio. Abre todos los días. También hay un puesto en el Aeropuerto.',
+      categoria: { key: 'tourism', value: 'information' },
+      lugares: [
+        { nombre: 'Oficina de Información Turística', direccion: 'Caseros 419', lat: -24.7884, lng: -65.4101 },
+        { nombre: 'Información Turística Aeropuerto', direccion: 'Aeropuerto Martín M. de Güemes', lat: -24.8560, lng: -65.4860 }
       ] }
 ];
 
@@ -168,6 +548,7 @@ function initMap(lat, lng) {
     setTimeout(() => map.invalidateSize(), 200);
 }
 
+// --- Buscar lugares en OSM (fallback) ---
 async function searchPlaces(lat, lng, categoria) {
     const { key, value } = categoria;
     const radius = 4000;
@@ -205,6 +586,36 @@ async function searchPlaces(lat, lng, categoria) {
     return [];
 }
 
+// --- Mostrar lugares fijos (con coordenadas definidas) ---
+function showFixedPlaces(places, lat, lng) {
+    markersLayer.clearLayers();
+    placesList.innerHTML = '';
+
+    // Marcador "estás aquí"
+    if (lat && lng) {
+        L.marker([lat, lng]).addTo(markersLayer).bindPopup('Estás aquí');
+    }
+
+    const bounds = [];
+    if (lat && lng) bounds.push([lat, lng]);
+
+    places.forEach(place => {
+        L.marker([place.lat, place.lng])
+            .addTo(markersLayer)
+            .bindPopup(`<strong>${place.nombre}</strong><br>${place.direccion}`);
+        bounds.push([place.lat, place.lng]);
+
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${place.nombre}</strong><small>${place.direccion}</small>`;
+        li.addEventListener('click', () => map.setView([place.lat, place.lng], 17));
+        placesList.appendChild(li);
+    });
+
+    if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30] });
+    else if (bounds.length === 1) map.setView(bounds[0], 16);
+}
+
+// --- Mostrar lugares de OSM (fallback) ---
 function showPlacesOnMap(places, lat, lng) {
     markersLayer.clearLayers();
     placesList.innerHTML = '';
@@ -240,13 +651,10 @@ async function showIntentResponse(intent, userLat, userLng, targetLang) {
     const langCfg = CONFIG.languages[targetLang];
 
     if (targetLang === 'auto') {
-        // Sin traducción: mostramos solo español
         respuestaTarget = intent.respuesta_es;
     } else if (intent['respuesta_' + targetLang]) {
-        // Tenemos traducción predefinida (en, pt)
         respuestaTarget = intent['respuesta_' + targetLang];
     } else {
-        // Traducimos la respuesta al idioma del turista al vuelo
         try {
             respuestaTarget = await translateText(intent.respuesta_es, 'es', langCfg.source);
         } catch (e) {
@@ -262,20 +670,35 @@ async function showIntentResponse(intent, userLat, userLng, targetLang) {
     intentResponse.classList.remove('hidden');
     resultadoDiv.classList.add('hidden');
 
-    // Leer en voz alta en el idioma del turista
     const speechLang = (langCfg && langCfg.speech) || 'es-ES';
     if (targetLang !== 'auto') speak(respuestaTarget, speechLang);
 
     mapContainer.classList.remove('hidden');
+
+    // 1) Si la intención tiene lugares fijos con coordenadas, los mostramos SIEMPRE.
+    if (intent.lugares && intent.lugares.length > 0) {
+        updateStatus('Mostrando lugares...');
+        // Usamos una ubicación base (centro de Salta) si el usuario no dio permiso
+        const baseLat = userLat || -24.7883;
+        const baseLng = userLng || -65.4106;
+        initMap(baseLat, baseLng);
+        showFixedPlaces(intent.lugares, userLat, userLng);
+        updateStatus(`Mostrando ${intent.lugares.length} lugares.`);
+        return;
+    }
+
+    // 2) Si no hay coordenadas fijas pero sí categoría, buscamos en OSM.
     if (userLat && userLng && intent.categoria) {
         updateStatus('Buscando lugares cercanos...');
         initMap(userLat, userLng);
         const places = await searchPlaces(userLat, userLng, intent.categoria);
         showPlacesOnMap(places, userLat, userLng);
         updateStatus(`Encontrados: ${places.length} lugares.`);
-    } else {
-        updateStatus('No se pudo obtener tu ubicación.', true);
+        return;
     }
+
+    // 3) Si no hay nada, mostramos un mensaje.
+    updateStatus('Mostrando respuesta general.');
 }
 
 // --- Reconocimiento de voz ---
@@ -339,7 +762,6 @@ async function handleTranslate() {
         return;
     }
 
-    // ¿La frase en español corresponde a una intención conocida?
     const intent = detectIntent(textoEs);
 
     if (intent) {
@@ -349,7 +771,7 @@ async function handleTranslate() {
                 (pos) => showIntentResponse(intent, pos.coords.latitude, pos.coords.longitude, langCode),
                 (err) => {
                     console.error('Geolocalización:', err);
-                    updateStatus('No se pudo obtener ubicación. Mostrando respuesta general.', true);
+                    updateStatus('Sin ubicación. Mostrando lugares de referencia.', true);
                     showIntentResponse(intent, null, null, langCode);
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
@@ -358,7 +780,6 @@ async function handleTranslate() {
             showIntentResponse(intent, null, null, langCode);
         }
     } else {
-        // Traducción normal
         translationResult.textContent = textoEs;
         resultadoDiv.classList.remove('hidden');
         updateStatus('Traducción completada.');
@@ -373,7 +794,6 @@ btnHablar.addEventListener('click', () => {
     } else {
         const langCode = idiomaSelect.value;
         const cfg = CONFIG.languages[langCode];
-        // Si es "auto" o no hay speech definido, usamos el idioma del navegador
         recognition.lang = (cfg && cfg.speech) || navigator.language || 'en-US';
         recognition.start();
     }
