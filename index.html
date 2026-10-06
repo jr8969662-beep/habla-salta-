@@ -1,153 +1,72 @@
-// script.js
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b3558">
+    
+    <title>Hablá Salta - Traductor de Voz para Turistas en Salta</title>
+    <meta name="description" content="Herramienta de traducción de voz gratuita para turistas y locales en Salta, Argentina. Hablá y entendé en español, inglés y portugués al instante.">
+    
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Hablá Salta</h1>
+            <p>Traducción de voz para turistas y locales</p>
+        </header>
 
-// --- Configuración ---
-const CONFIG = {
-    translationApi: 'https://api.mymemory.translated.net/get',
-    maxChars: 500,
-    languages: {
-        'es-EN': { source: 'es', target: 'en', name: 'Español a Inglés' },
-        'es-PT': { source: 'es', target: 'pt', name: 'Español a Portugués' }
-    }
-};
+        <main>
+            <div class="language-selector">
+                <button id="btn-lang-es-EN" class="lang-btn active">Español ↔ Inglés</button>
+                <button id="btn-lang-es-PT" class="lang-btn">Español ↔ Portugués</button>
+            </div>
 
-// --- Estado de la aplicación ---
-let currentLanguageKey = 'es-EN';
-let isListening = false;
-let recognition = null;
+            <div class="status-area">
+                <p id="status-text">Presioná el botón para hablar</p>
+                <div id="error-message" class="error hidden"></div>
+            </div>
 
-// --- Elementos del DOM ---
-const btnHablar = document.getElementById('btn-hablar');
-const translationResult = document.getElementById('translation-result');
-const statusText = document.getElementById('status-text');
-const errorMessage = document.getElementById('error-message');
-const langButtons = document.querySelectorAll('.lang-btn');
+            <div class="button-container">
+                <button id="btn-hablar" class="mic-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+            </div>
 
-// --- Funciones ---
+            <div class="result-area">
+                <h2 id="result-title">Traducción:</h2>
+                <p id="translation-result"></p>
+            </div>
 
-function updateStatus(message, isError = false) {
-    statusText.textContent = message;
-    if (isError) {
-        errorMessage.textContent = message;
-        errorMessage.classList.remove('hidden');
-    } else {
-        errorMessage.classList.add('hidden');
-    }
-}
+            <div id="intent-response" class="intent-response hidden"></div>
 
-async function translateText(text) {
-    if (!text.trim()) {
-        updateStatus('No se reconoció ninguna palabra.', true);
-        return;
-    }
+            <div id="map-container" class="map-container hidden">
+                <h2 id="map-title">Lugares cercanos</h2>
+                <div id="map"></div>
+                <ul id="places-list" class="places-list"></ul>
+            </div>
+        </main>
 
-    const lang = CONFIG.languages[currentLanguageKey];
-    const url = `${CONFIG.translationApi}?q=${encodeURIComponent(text)}&langpair=${lang.source}|${lang.target}`;
+        <footer>
+            <p>Hecho con ❤️ en Salta</p>
+        </footer>
+    </div>
 
-    updateStatus('Traduciendo...');
-    translationResult.textContent = '';
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Error en la red: ${response.status}`);
-        }
-        const data = await response.json();
-        
-        if (data.responseData && data.responseData.translatedText) {
-            const translatedText = data.responseData.translatedText;
-            translationResult.textContent = translatedText;
-            updateStatus('Traducción completada.');
-            speak(translatedText, lang.target);
-        } else {
-            throw new Error('La API no devolvió una traducción válida.');
-        }
-    } catch (error) {
-        console.error('Error en la traducción:', error);
-        updateStatus(`Error al traducir: ${error.message}`, true);
-    }
-}
-
-function speak(text, langCode) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = langCode;
-        window.speechSynthesis.speak(utterance);
-    } else {
-        console.warn('La síntesis de voz no es soportada por este navegador.');
-    }
-}
-
-function setupSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        updateStatus('Tu navegador no soporta el reconocimiento de voz. Usá Chrome o Edge.', true);
-        btnHablar.disabled = true;
-        return;
-    }
-
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-        isListening = true;
-        btnHablar.classList.add('listening');
-        updateStatus('Escuchando...');
-    };
-
-    recognition.onend = () => {
-        isListening = false;
-        btnHablar.classList.remove('listening');
-    };
-
-    recognition.onerror = (event) => {
-        isListening = false;
-        btnHablar.classList.remove('listening');
-        let errorMsg = `Error de reconocimiento: ${event.error}`;
-        if (event.error === 'not-allowed') {
-            errorMsg = 'Permiso de micrófono denegado. Habilitalo en tu navegador.';
-        } else if (event.error === 'no-speech') {
-            errorMsg = 'No se detectó voz. Intentá de nuevo.';
-        }
-        updateStatus(errorMsg, true);
-    };
-
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        console.log('Texto reconocido:', transcript);
-        translateText(transcript);
-    };
-}
-
-// --- Event Listeners ---
-
-btnHablar.addEventListener('click', () => {
-    if (!recognition) return;
-
-    if (isListening) {
-        recognition.stop();
-    } else {
-        const lang = CONFIG.languages[currentLanguageKey];
-        recognition.lang = lang.source;
-        recognition.start();
-    }
-});
-
-langButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        langButtons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        currentLanguageKey = button.id.replace('btn-lang-', '');
-        translationResult.textContent = '';
-        updateStatus(`Idioma: ${CONFIG.languages[currentLanguageKey].name}`);
-    });
-});
-
-// --- Inicialización ---
-function init() {
-    setupSpeechRecognition();
-    updateStatus('Presioná el botón para hablar');
-}
-
-document.addEventListener('DOMContentLoaded', init);
+    <!-- Leaflet JS (debe ir ANTES de script.js) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
