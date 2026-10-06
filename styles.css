@@ -8,8 +8,29 @@
     --gris-texto: #5a4632;
     --borde: #e3c9a0;
     --rojo: #b91c1c;
+    --rojo-hover: #991b1b;
+    --azul-hover: #082a46;
+    --input-bg: #ffffff;
+    --overlay: rgba(0, 0, 0, 0);
     --sombra: 0 8px 32px rgba(0, 0, 0, 0.3);
     --border-radius: 12px;
+}
+
+[data-theme="dark"] {
+    --azul-oscuro: #7cb8e8;
+    --azul-claro: #5a9ed0;
+    --fondo-oscuro: #d18a6a;
+    --fondo-claro: #2a2a35;
+    --celeste: #262633;
+    --blanco: #1a1a24;
+    --gris-texto: #e0e0e8;
+    --borde: #3a3a48;
+    --rojo: #f87171;
+    --rojo-hover: #ef4444;
+    --azul-hover: #9ccbee;
+    --input-bg: #23232e;
+    --overlay: rgba(0, 0, 0, 0.55);
+    --sombra: 0 8px 32px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -20,7 +41,7 @@
 
 body {
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
-    background-image: url('salta-fondo.jpg');
+    background-image: linear-gradient(var(--overlay), var(--overlay)), url('salta-fondo.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -32,6 +53,37 @@ body {
     padding: 1rem;
     padding-top: env(safe-area-inset-top, 1rem);
     padding-bottom: env(safe-area-inset-bottom, 1rem);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* ===== BOTÓN DE TEMA ===== */
+.theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--blanco);
+    color: var(--azul-oscuro);
+    font-size: 1.3rem;
+    cursor: pointer;
+    box-shadow: var(--sombra);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, background-color 0.3s;
+    padding-top: env(safe-area-inset-top, 1rem);
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
 }
 
 .container {
@@ -50,6 +102,10 @@ header {
     text-align: center;
     box-shadow: var(--sombra);
     backdrop-filter: blur(5px);
+}
+
+[data-theme="dark"] header {
+    background-color: rgba(30, 30, 40, 0.95);
 }
 
 .subtitulo {
@@ -80,6 +136,7 @@ header h1 {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    transition: background-color 0.3s;
 }
 
 .form-group {
@@ -114,7 +171,8 @@ select, textarea {
     font-family: inherit;
     font-size: 0.9rem;
     color: var(--gris-texto);
-    background-color: #fff;
+    background-color: var(--input-bg);
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 textarea {
@@ -141,7 +199,7 @@ select:focus, textarea:focus {
 }
 
 .btn-hablar:hover {
-    background-color: #991b1b;
+    background-color: var(--rojo-hover);
 }
 
 .btn-hablar.listening {
@@ -173,8 +231,12 @@ select:focus, textarea:focus {
     width: 100%;
 }
 
+[data-theme="dark"] .btn-traducir {
+    color: #1a1a24;
+}
+
 .btn-traducir:hover {
-    background-color: #082a46;
+    background-color: var(--azul-hover);
 }
 
 .resultado {
@@ -183,6 +245,7 @@ select:focus, textarea:focus {
     border-radius: 8px;
     border: 1px solid var(--borde);
     text-align: left;
+    transition: background-color 0.3s;
 }
 
 .resultado-label {
@@ -230,6 +293,7 @@ select:focus, textarea:focus {
     padding: 1rem;
     border-radius: 8px;
     text-align: left;
+    transition: background-color 0.3s;
 }
 
 .intent-response .intent-es {
@@ -267,6 +331,15 @@ select:focus, textarea:focus {
     border: 1px solid var(--borde);
 }
 
+/* Filtro oscuro para el mapa en modo dark */
+[data-theme="dark"] .leaflet-tile {
+    filter: brightness(0.75) invert(1) contrast(0.9) hue-rotate(180deg) saturate(0.7);
+}
+
+[data-theme="dark"] .leaflet-container {
+    background: #1a1a24;
+}
+
 .places-list {
     list-style: none;
     padding: 0;
@@ -276,13 +349,14 @@ select:focus, textarea:focus {
 }
 
 .places-list li {
-    background-color: #fff;
+    background-color: var(--input-bg);
     border: 1px solid var(--borde);
     border-radius: 6px;
     padding: 0.6rem;
     margin-bottom: 0.4rem;
     cursor: pointer;
     font-size: 0.85rem;
+    transition: background-color 0.2s;
 }
 
 .places-list li:hover {
@@ -296,6 +370,11 @@ select:focus, textarea:focus {
 
 .places-list li small {
     color: var(--gris-texto);
+}
+
+.custom-marker {
+    background: transparent;
+    border: none;
 }
 
 footer {
