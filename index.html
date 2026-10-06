@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b3558">
-    
+
     <title>Hablá Salta - Traductor de Voz para Turistas en Salta</title>
-    <meta name="description" content="Herramienta de traducción de voz gratuita para turistas y locales en Salta, Argentina. Hablá y entendé en español, inglés y portugués al instante.">
-    
+    <meta name="description" content="Herramienta de traducción de voz gratuita para turistas y locales en Salta, Argentina. Hablá y entendé en varios idiomas al instante.">
+
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="styles.css">
-    
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
@@ -26,8 +26,16 @@
             <div class="form-group">
                 <label for="idioma">Idioma que habla la otra persona</label>
                 <select id="idioma">
-                    <option value="en">English</option>
-                    <option value="pt">Português</option>
+                    <option value="auto">🌐 Detectar automáticamente</option>
+                    <option value="en">🇬🇧 English</option>
+                    <option value="pt">🇧🇷 Português</option>
+                    <option value="fr">🇫🇷 Français</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="it">🇮🇹 Italiano</option>
+                    <option value="zh">🇨🇳 中文</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="he">🇮🇱 עברית</option>
                 </select>
                 <p class="nota">La traducción siempre se muestra en español.</p>
             </div>
@@ -62,7 +70,7 @@
         </main>
 
         <footer>
-            <p>bizcochito <3</p>
+            <p>bizcochito &lt;3</p>
         </footer>
     </div>
 
