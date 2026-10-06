@@ -9,7 +9,7 @@ const CONFIG = {
     }
 };
 
-// --- Intenciones ---
+// --- Intenciones con direcciones reales de Salta ---
 const INTENTS = [
     { keywords: ['saeta','tarjeta','cargar','colectivo','bus','recarga'],
       respuesta_es: 'Podés cargar la tarjeta SAETA en los Centros de Atención al Usuario de Pellegrini 824 o en el Paseo Salta (ex Hiper Libertad), local 2020, 1er piso. También hay cajeros de recarga en San Martín y Buenos Aires, y en la peatonal Florida entre San Martín y Urquiza, disponibles 24 hs. En Casa de Gobierno y Centro Cívico Municipal también podés adquirir y recargar.',
@@ -124,7 +124,7 @@ async function translateText() {
     const langCode = idiomaSelect.value;
     const lang = CONFIG.languages[langCode];
     const url = `${CONFIG.translationApi}?q=${encodeURIComponent(text)}&langpair=${lang.source}|${lang.target}`;
-    
+
     updateStatus('Traduciendo...');
     resultadoDiv.classList.add('hidden');
     intentResponse.classList.add('hidden');
@@ -134,7 +134,7 @@ async function translateText() {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Error de red: ${response.status}`);
         const data = await response.json();
-        
+
         if (data.responseData && data.responseData.translatedText) {
             translationResult.textContent = data.responseData.translatedText;
             resultadoDiv.classList.remove('hidden');
@@ -176,17 +176,41 @@ function initMap(lat, lng) {
 
 async function searchPlaces(lat, lng, categoria) {
     const { key, value } = categoria;
-    const radius = 1500;
-    const query = `[out:json][timeout:20];(node["${key}"="${value}"](around:${radius},${lat},${lng});way["${key}"="${value}"](around:${radius},${lat},${lng});relation["${key}"="${value}"](around:${radius},${lat},${lng}););out center 30;`;
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-        return data.elements || [];
-    } catch (error) {
-        console.error('Error buscando lugares:', error);
-        return [];
+    const radius = 4000;
+
+    const query = `
+        [out:json][timeout:25];
+        (
+            node["${key}"="${value}"](around:${radius},${lat},${lng});
+            way["${key}"="${value}"](around:${radius},${lat},${lng});
+            relation["${key}"="${value}"](around:${radius},${lat},${lng});
+        );
+        out center 40;
+    `.trim();
+
+    const mirrors = [
+        'https://overpass-api.de/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter',
+        'https://overpass.private.coffee/api/interpreter'
+    ];
+
+    for (const mirror of mirrors) {
+        try {
+            const response = await fetch(mirror, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'data=' + encodeURIComponent(query)
+            });
+            if (!response.ok) continue;
+            const data = await response.json();
+            if (data.elements && data.elements.length > 0) {
+                return data.elements;
+            }
+        } catch (error) {
+            console.warn('Falló el mirror', mirror, error);
+        }
     }
+    return [];
 }
 
 function showPlacesOnMap(places, lat, lng) {
@@ -205,7 +229,9 @@ function showPlacesOnMap(places, lat, lng) {
         const pLng = place.lon || (place.center && place.center.lon);
         if (!pLat || !pLng) return;
         const name = (place.tags && place.tags.name) || 'Sin nombre';
-        const address = (place.tags && place.tags['addr:street']) ? `${place.tags['addr:street']} ${place.tags['addr:housenumber'] || ''}` : 'Dirección no disponible';
+        const address = (place.tags && place.tags['addr:street'])
+            ? `${place.tags['addr:street']} ${place.tags['addr:housenumber'] || ''}`.trim()
+            : 'Dirección no disponible';
         L.marker([pLat, pLng]).addTo(markersLayer).bindPopup(`<strong>${name}</strong><br>${address}`);
         bounds.push([pLat, pLng]);
         const li = document.createElement('li');
