@@ -799,3 +799,36 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSpeechRecognition();
     updateStatus('Presioná "Hablar" para dictar.');
 });
+// ===== CAMBIO DE TEMA (CLARO / OSCURO) =====
+(function setupThemeToggle() {
+    const btn = document.getElementById('theme-toggle');
+    const icon = document.getElementById('theme-icon');
+    if (!btn || !icon) return;
+
+    function aplicarTema(tema) {
+        document.documentElement.setAttribute('data-theme', tema);
+        icon.textContent = tema === 'dark' ? '☀️' : '🌙';
+        localStorage.setItem('tema', tema);
+
+        // Actualizar meta theme-color para la barra del navegador
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', tema === 'dark' ? '#1a1a24' : '#0b3558');
+    }
+
+    // Tema inicial (el script del <head> ya lo puso, pero aseguramos el ícono)
+    const temaActual = document.documentElement.getAttribute('data-theme') || 'light';
+    icon.textContent = temaActual === 'dark' ? '☀️' : '🌙';
+
+    // Click para alternar
+    btn.addEventListener('click', () => {
+        const actual = document.documentElement.getAttribute('data-theme') || 'light';
+        aplicarTema(actual === 'dark' ? 'light' : 'dark');
+    });
+
+    // Si el usuario cambia el tema del sistema operativo, seguimos (solo si no eligió manualmente)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('tema')) {
+            aplicarTema(e.matches ? 'dark' : 'light');
+        }
+    });
+})();
