@@ -1,1 +1,15 @@
+/* Mejora para listas largas de lugares */
+.places-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
 
+.places-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.places-list::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 3px;
+}
