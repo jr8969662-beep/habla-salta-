@@ -4,16 +4,37 @@
 const CONFIG = {
     translationApi: 'https://api.mymemory.translated.net/get',
     languages: {
-        'auto': { source: 'Autodetect', target: 'es', name: 'Detectar automáticamente', speech: null },
-        'en':   { source: 'en',    target: 'es', name: 'Inglés',    speech: 'en-US' },
-        'pt':   { source: 'pt',    target: 'es', name: 'Portugués', speech: 'pt-BR' },
-        'fr':   { source: 'fr',    target: 'es', name: 'Francés',   speech: 'fr-FR' },
-        'de':   { source: 'de',    target: 'es', name: 'Alemán',    speech: 'de-DE' },
-        'it':   { source: 'it',    target: 'es', name: 'Italiano',  speech: 'it-IT' },
-        'zh':   { source: 'zh-CN', target: 'es', name: 'Chino',     speech: 'zh-CN' },
-        'ja':   { source: 'ja',    target: 'es', name: 'Japonés',   speech: 'ja-JP' },
-        'ru':   { source: 'ru',    target: 'es', name: 'Ruso',      speech: 'ru-RU' },
-        'he':   { source: 'he',    target: 'es', name: 'Hebreo',    speech: 'he-IL' }
+        'auto': { source: 'Autodetect', name: 'Detectar automáticamente', label: "🌐 Detectar automáticamente", speech: null },
+        'en': { source: 'en', name: 'Inglés', label: "🇬🇧 English", speech: 'en-US' },
+        'pt': { source: 'pt', name: 'Portugués', label: "🇧🇷 Português", speech: 'pt-BR' },
+        'fr': { source: 'fr', name: 'Francés', label: "🇫🇷 Français", speech: 'fr-FR' },
+        'de': { source: 'de', name: 'Alemán', label: "🇩🇪 Deutsch", speech: 'de-DE' },
+        'it': { source: 'it', name: 'Italiano', label: "🇮🇹 Italiano", speech: 'it-IT' },
+        'nl': { source: 'nl', name: 'Neerlandés', label: "🇳🇱 Nederlands", speech: 'nl-NL' },
+        'pl': { source: 'pl', name: 'Polaco', label: "🇵🇱 Polski", speech: 'pl-PL' },
+        'sv': { source: 'sv', name: 'Sueco', label: "🇸🇪 Svenska", speech: 'sv-SE' },
+        'da': { source: 'da', name: 'Danés', label: "🇩🇰 Dansk", speech: 'da-DK' },
+        'no': { source: 'no', name: 'Noruego', label: "🇳🇴 Norsk", speech: 'nb-NO' },
+        'fi': { source: 'fi', name: 'Finlandés', label: "🇫🇮 Suomi", speech: 'fi-FI' },
+        'cs': { source: 'cs', name: 'Checo', label: "🇨🇿 Čeština", speech: 'cs-CZ' },
+        'el': { source: 'el', name: 'Griego', label: "🇬🇷 Ελληνικά", speech: 'el-GR' },
+        'ro': { source: 'ro', name: 'Rumano', label: "🇷🇴 Română", speech: 'ro-RO' },
+        'hu': { source: 'hu', name: 'Húngaro', label: "🇭🇺 Magyar", speech: 'hu-HU' },
+        'uk': { source: 'uk', name: 'Ucraniano', label: "🇺🇦 Українська", speech: 'uk-UA' },
+        'ru': { source: 'ru', name: 'Ruso', label: "🇷🇺 Русский", speech: 'ru-RU' },
+        'tr': { source: 'tr', name: 'Turco', label: "🇹🇷 Türkçe", speech: 'tr-TR' },
+        'he': { source: 'he', name: 'Hebreo', label: "🇮🇱 עברית", speech: 'he-IL', rtl: true },
+        'ar': { source: 'ar', name: 'Árabe', label: "🇸🇦 العربية", speech: 'ar-SA', rtl: true },
+        'hi': { source: 'hi', name: 'Hindi', label: "🇮🇳 हिन्दी", speech: 'hi-IN' },
+        'zh': { source: 'zh', name: 'Chino', label: "🇨🇳 中文", speech: 'zh-CN' },
+        'ja': { source: 'ja', name: 'Japonés', label: "🇯🇵 日本語", speech: 'ja-JP' },
+        'ko': { source: 'ko', name: 'Coreano', label: "🇰🇷 한국어", speech: 'ko-KR' },
+        'th': { source: 'th', name: 'Tailandés', label: "🇹🇭 ไทย", speech: 'th-TH' },
+        'vi': { source: 'vi', name: 'Vietnamita', label: "🇻🇳 Tiếng Việt", speech: 'vi-VN' },
+        'id': { source: 'id', name: 'Indonesio', label: "🇮🇩 Bahasa Indonesia", speech: 'id-ID' },
+        'qu': { source: 'qu', name: 'Quechua', label: "🏔️ Runasimi (Quechua)", speech: null },
+        'ay': { source: 'ay', name: 'Aimara', label: "🏔️ Aymar aru (Aimara)", speech: null },
+        'gn': { source: 'gn', name: 'Guaraní', label: "🇵🇾 Avañe'ẽ (Guaraní)", speech: null }
     }
 };
 
@@ -471,7 +492,7 @@ const CACHE_MAX = 300;
 // Código interno -> código de cada servicio
 function apiCode(code) {
     if (!code || code === 'auto' || code === 'Autodetect') return 'auto';
-    const map = { zh: 'zh-CN', he: 'iw' };
+    const map = { zh: 'zh-CN', he: 'iw', no: 'no' };
     return map[code] || code;
 }
 
@@ -481,6 +502,7 @@ function normalizeLang(code) {
     const c = code.toLowerCase();
     if (c.startsWith('zh')) return 'zh';
     if (c === 'iw') return 'he';
+    if (c === 'nb' || c === 'nn') return 'no';
     return c.split('-')[0];
 }
 
@@ -630,7 +652,8 @@ function langName(code) {
 }
 
 function speechCode(code) {
-    return (CONFIG.languages[code] && CONFIG.languages[code].speech) || code;
+    // Quechua, aimara y guaraní no tienen voz propia: se leen con voz en español
+    return (CONFIG.languages[code] && CONFIG.languages[code].speech) || 'es-AR';
 }
 
 // --- Detección de intenciones ---
@@ -1147,8 +1170,10 @@ async function handleTranslate() {
     }
 }
 
-function showResult(text, lang, label) {
+function showResult(text, lang, label, original) {
     translationResult.textContent = text;
+    translationResult.dir = (CONFIG.languages[lang] && CONFIG.languages[lang].rtl) ? 'rtl' : 'ltr';
+    addToHistory({ original: original || textoEntrada.value.trim(), text, lang, label });
     translationResult.setAttribute('lang', lang);
     translationResult.dataset.lang = lang;
     resultLabel.textContent = label || 'TRADUCCIÓN';
@@ -1217,9 +1242,171 @@ btnCopiar.addEventListener('click', () => {
     }
 });
 
+
+// ===== Selector de idiomas =====
+(function setupLanguages() {
+    const frag = document.createDocumentFragment();
+    Object.entries(CONFIG.languages).forEach(([code, cfg]) => {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = cfg.label || cfg.name;
+        frag.appendChild(opt);
+    });
+    idiomaSelect.appendChild(frag);
+    try {
+        const saved = localStorage.getItem('hablaSaltaIdioma');
+        if (saved && CONFIG.languages[saved]) idiomaSelect.value = saved;
+    } catch (e) {}
+    idiomaSelect.addEventListener('change', () => {
+        try { localStorage.setItem('hablaSaltaIdioma', idiomaSelect.value); } catch (e) {}
+        if (idiomaSelect.value !== 'auto') lastVisitorLang = idiomaSelect.value;
+        renderQuickPhrases();
+    });
+})();
+
+// ===== Frases rápidas (vos → visitante) =====
+const QUICK_PHRASES = [
+    { cat: '👋 Saludos', items: ['Hola, bienvenido a Salta', 'Gracias', 'Un momento, por favor', '¿En qué lo puedo ayudar?', 'No entiendo, ¿puede repetir?'] },
+    { cat: '💵 Pagos', items: ['¿Cuánto cuesta?', 'Son {n} pesos', 'Solo efectivo', 'Aceptamos tarjeta', 'Se puede pagar con transferencia o QR', 'No tengo cambio'] },
+    { cat: '🧭 Direcciones', items: ['Siga derecho', 'Doble a la derecha', 'Doble a la izquierda', 'Está a dos cuadras', 'Está cerca, puede ir caminando', 'Le conviene tomar un taxi'] },
+    { cat: '🚨 Ayuda', items: ['Llamaré a una ambulancia', 'La policía está en camino', '¿Necesita ayuda?', '¿Tiene su documento o pasaporte?', 'Quédese aquí, por favor'] },
+    { cat: '🍽️ Comercio', items: ['Está cerrado', 'Abrimos a las 9', 'El baño está al fondo', '¿Para comer aquí o para llevar?', 'La cuenta, ahora se la traigo'] }
+];
+
+function renderQuickPhrases() {
+    const box = document.getElementById('quick-phrases');
+    if (!box) return;
+    const target = idiomaSelect.value !== 'auto' ? idiomaSelect.value : lastVisitorLang;
+    const hint = document.getElementById('quick-hint');
+    hint.textContent = target
+        ? `Tocá una frase y se dice en ${langName(target).toLowerCase()}.`
+        : 'Elegí arriba el idioma del visitante para usarlas.';
+    if (box.dataset.ready) return;
+    box.dataset.ready = '1';
+    QUICK_PHRASES.forEach((group, gi) => {
+        const det = document.createElement('details');
+        if (gi === 0) det.open = true;
+        det.innerHTML = `<summary>${group.cat}</summary><div class="chips"></div>`;
+        const chips = det.querySelector('.chips');
+        group.items.forEach(frase => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'chip';
+            b.textContent = frase.replace('{n}', '…');
+            b.addEventListener('click', () => sayQuickPhrase(frase));
+            chips.appendChild(b);
+        });
+        box.appendChild(det);
+    });
+}
+
+async function sayQuickPhrase(frase) {
+    const target = idiomaSelect.value !== 'auto' ? idiomaSelect.value : lastVisitorLang;
+    if (!target) {
+        updateStatus('Primero elegí el idioma del visitante.', true);
+        idiomaSelect.focus();
+        return;
+    }
+    if (frase.includes('{n}')) {
+        const n = prompt('¿Cuántos pesos?');
+        if (!n) return;
+        frase = frase.replace('{n}', n.replace(/[^\d.,]/g, ''));
+    }
+    updateStatus('Traduciendo...');
+    try {
+        const r = await translateFull(frase, 'es', target);
+        intentResponse.classList.add('hidden');
+        mapContainer.classList.add('hidden');
+        showResult(r.text, target, `ESPAÑOL → ${langName(target).toUpperCase()}`, frase);
+        speak(r.text, speechCode(target));
+        updateStatus(`"${frase}"`);
+        resultadoDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {
+        updateStatus(e.message, true);
+    }
+}
+
+// ===== Pantalla grande para mostrarle al turista =====
+const overlay = document.getElementById('fullscreen');
+function showFullscreen() {
+    const texto = translationResult.textContent;
+    if (!texto) return;
+    const lang = translationResult.dataset.lang || 'es';
+    const fsText = document.getElementById('fullscreen-text');
+    fsText.textContent = texto;
+    fsText.lang = lang;
+    fsText.dir = translationResult.dir;
+    // Letra lo más grande posible según el largo
+    fsText.style.fontSize = `clamp(1.6rem, ${Math.max(4, 22 - texto.length / 8)}vw, 5.5rem)`;
+    overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+function hideFullscreen() {
+    overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+document.getElementById('btn-mostrar').addEventListener('click', showFullscreen);
+overlay.addEventListener('click', e => { if (!e.target.closest('button')) hideFullscreen(); });
+document.getElementById('fs-cerrar').addEventListener('click', hideFullscreen);
+document.getElementById('fs-escuchar').addEventListener('click', () => btnEscuchar.click());
+document.getElementById('fs-girar').addEventListener('click', () =>
+    document.getElementById('fullscreen-text').classList.toggle('girado'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideFullscreen(); });
+
+// ===== Historial =====
+const HISTORY_KEY = 'hablaSaltaHistorial';
+let history = [];
+try { history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) { history = []; }
+
+function addToHistory(item) {
+    if (!item.text) return;
+    history = history.filter(h => !(h.text === item.text && h.lang === item.lang));
+    history.unshift({ ...item, t: Date.now() });
+    history = history.slice(0, 15);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+    renderHistory();
+}
+
+function renderHistory() {
+    const box = document.getElementById('historial');
+    const list = document.getElementById('historial-lista');
+    if (!box) return;
+    box.classList.toggle('hidden', history.length === 0);
+    list.innerHTML = '';
+    history.forEach(h => {
+        const li = document.createElement('li');
+        li.innerHTML = `<small>${escapeHtml(h.label || '')}</small>
+            <span class="h-orig">${escapeHtml(h.original || '')}</span>
+            <span class="h-trad" dir="auto">${escapeHtml(h.text)}</span>`;
+        li.addEventListener('click', () => {
+            translationResult.textContent = h.text;
+            translationResult.dataset.lang = h.lang;
+            translationResult.dir = (CONFIG.languages[h.lang] && CONFIG.languages[h.lang].rtl) ? 'rtl' : 'ltr';
+            resultLabel.textContent = h.label || 'TRADUCCIÓN';
+            resultadoDiv.classList.remove('hidden');
+            resultadoDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        list.appendChild(li);
+    });
+}
+document.getElementById('btn-borrar-historial').addEventListener('click', () => {
+    history = [];
+    try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+    renderHistory();
+});
+
+// ===== Botón limpiar texto =====
+document.getElementById('btn-limpiar').addEventListener('click', () => {
+    textoEntrada.value = '';
+    textoEntrada.focus();
+});
+
 // --- Inicialización ---
 document.addEventListener('DOMContentLoaded', () => {
     setupSpeechRecognition();
+    renderQuickPhrases();
+    renderHistory();
+    if (idiomaSelect.value !== 'auto') lastVisitorLang = idiomaSelect.value;
     updateStatus('Presioná "Hablar" para dictar.');
 });
 // ===== CAMBIO DE TEMA (CLARO / OSCURO) =====

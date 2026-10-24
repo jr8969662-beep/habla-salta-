@@ -8,7 +8,7 @@
     <title>Hablá Salta - Traductor de Voz para Turistas en Salta</title>
     <meta name="description" content="Herramienta de traducción de voz gratuita para turistas y locales en Salta, Argentina. Hablá y entendé en varios idiomas al instante.">
 
-    <link rel="icon" href="data:,">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗣️</text></svg>">
     <link rel="stylesheet" href="styles.css">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -37,18 +37,7 @@
         <main class="card">
             <div class="form-group">
                 <label for="idioma">Idioma que habla la otra persona</label>
-                <select id="idioma">
-                    <option value="auto">🌐 Detectar automáticamente</option>
-                    <option value="en">🇬🇧 English</option>
-                    <option value="pt">🇧🇷 Português</option>
-                    <option value="fr">🇫🇷 Français</option>
-                    <option value="de">🇩🇪 Deutsch</option>
-                    <option value="it">🇮🇹 Italiano</option>
-                    <option value="zh">🇨🇳 中文</option>
-                    <option value="ja">🇯🇵 日本語</option>
-                    <option value="ru">🇷🇺 Русский</option>
-                    <option value="he">🇮🇱 עברית</option>
-                </select>
+                <select id="idioma"></select>
                 <p id="nota-idioma" class="nota">La traducción se muestra en español.</p>
                 <button id="btn-direccion" class="btn-direccion" type="button" aria-pressed="false">⇄ Visitante → Español</button>
             </div>
@@ -58,7 +47,10 @@
                     <label id="label-texto" for="texto-entrada">¿Qué quiere decir?</label>
                     <button id="btn-hablar" class="btn-hablar">🎙️ Hablar</button>
                 </div>
-                <textarea id="texto-entrada" placeholder="Escribí o dictá la frase..."></textarea>
+                <div class="textarea-wrap">
+                    <textarea id="texto-entrada" placeholder="Escribí o dictá la frase..." dir="auto"></textarea>
+                    <button id="btn-limpiar" class="btn-limpiar" type="button" aria-label="Borrar texto">✕</button>
+                </div>
                 <p id="status-text" class="status-text">Presioná "Hablar" para dictar.</p>
             </div>
 
@@ -69,7 +61,8 @@
                 <p id="translation-result" class="resultado-texto"></p>
                 <div class="resultado-botones">
                     <button id="btn-escuchar" class="btn-secundario">🔊 Escuchar</button>
-                    <button id="btn-copiar" class="btn-secundario">Copiar</button>
+                    <button id="btn-copiar" class="btn-secundario">📋 Copiar</button>
+                    <button id="btn-mostrar" class="btn-secundario btn-mostrar">⛶ Mostrar grande</button>
                 </div>
             </div>
 
@@ -80,11 +73,34 @@
                 <div id="map"></div>
                 <ul id="places-list" class="places-list"></ul>
             </div>
+            <section class="quick-section">
+                <h2>Frases rápidas</h2>
+                <p id="quick-hint" class="nota"></p>
+                <div id="quick-phrases" class="quick-phrases"></div>
+            </section>
+
+            <section id="historial" class="historial hidden">
+                <div class="historial-head">
+                    <h2>Últimas traducciones</h2>
+                    <button id="btn-borrar-historial" class="btn-link" type="button">Borrar</button>
+                </div>
+                <ul id="historial-lista"></ul>
+            </section>
         </main>
 
         <footer>
             <p>bizcochito &lt;3</p>
+            <p class="aviso">Traducción automática: puede tener errores.</p>
         </footer>
+    </div>
+
+    <div id="fullscreen" class="fullscreen hidden" role="dialog" aria-label="Traducción en pantalla grande">
+        <p id="fullscreen-text" class="fullscreen-text"></p>
+        <div class="fullscreen-botones">
+            <button id="fs-escuchar" type="button">🔊 Escuchar</button>
+            <button id="fs-girar" type="button">🔄 Girar</button>
+            <button id="fs-cerrar" type="button">✕ Cerrar</button>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
