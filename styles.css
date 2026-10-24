@@ -409,3 +409,72 @@ footer {
     color: var(--blanco);
 }
 .btn-traducir:disabled { opacity: 0.6; cursor: wait; }
+
+/* --- Lugares cercanos --- */
+.places-list .lugar {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    cursor: default;
+}
+.lugar-num, .custom-marker .pin {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.lugar-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lugar-info strong { cursor: pointer; }
+.lugar-tipo { font-size: 0.8rem; opacity: 0.75; }
+.lugar-dist { font-weight: 600; color: var(--azul-claro); }
+.badge-guardia, .badge-fijo {
+    align-self: flex-start;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+.badge-guardia { background: var(--rojo); color: #fff; }
+.badge-fijo { background: var(--celeste); color: var(--azul-oscuro); border: 1px solid var(--borde); }
+.lugar-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.btn-mini {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: var(--azul-oscuro);
+    color: var(--blanco);
+    text-decoration: none;
+}
+.btn-mini:hover { background: var(--azul-hover); }
+.places-list .cargando, .places-list .sin-resultados { opacity: 0.85; }
+.places-list .sin-resultados a { color: var(--azul-claro); font-weight: 600; }
+
+/* --- Banner de emergencias --- */
+.emergency-banner {
+    background: var(--rojo);
+    color: #fff;
+    border-radius: var(--border-radius);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+.emergency-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.emergency-links a {
+    flex: 1 1 auto;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 8px;
+}
+.emergency-links a:hover { background: rgba(255, 255, 255, 0.3); }

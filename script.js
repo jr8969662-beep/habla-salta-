@@ -434,6 +434,7 @@ const btnCopiar = document.getElementById('btn-copiar');
 const intentResponse = document.getElementById('intent-response');
 const mapContainer = document.getElementById('map-container');
 const placesList = document.getElementById('places-list');
+const mapTitle = document.getElementById('map-title');
 const btnDireccion = document.getElementById('btn-direccion');
 const labelTexto = document.getElementById('label-texto');
 const notaIdioma = document.getElementById('nota-idioma');
@@ -633,14 +634,67 @@ function speechCode(code) {
 }
 
 // --- Detección de intenciones ---
-function detectIntent(text) {
-    const lower = text.toLowerCase();
-    for (const intent of INTENTS) {
-        for (const keyword of intent.keywords) {
-            if (lower.includes(keyword)) return intent;
+
+function normText(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Palabras extra (español + idiomas de turistas) por categoría
+const EXTRA_KEYWORDS = {
+    hospital: ['hospital','hospitales','clinica','sanatorio','guardia','emergencia','urgencia','ambulancia',
+               'medico','doctor','enfermo','enferma','herido','herida','dolor','salud','centro de salud',
+               'clinic','emergency','sick','injured','hurt','ospedale','hopital','krankenhaus','arzt','больница'],
+    police: ['policia','comisaria','comisarias','robo','robaron','denuncia','extravio','police',
+             'stolen','robbed','polizei','polizia','policia federal'],
+    atm: ['cajero','cajeros','cajero automatico','atm','efectivo','sacar plata','sacar dinero','cash',
+          'geldautomat','bancomat','distributeur','caixa eletronico'],
+    bank: ['banco','bank','banque','banca'],
+    cafe: ['cafe','cafes','cafeteria','coffee','kaffee','caffe'],
+    pharmacy: ['farmacia','farmacias','remedio','medicamento','pastilla','pharmacy','drugstore',
+               'apotheke','pharmacie','farmacia de turno'],
+    restaurant: ['restaurante','restaurant','comer','comida','almorzar','cenar','hungry','eat','food'],
+    supermarket: ['supermercado','almacen','kiosco','supermarket','grocery'],
+    hotel: ['hotel','hostel','hostal','alojamiento','hospedaje','dormir'],
+    fuel: ['nafta','combustible','estacion de servicio','gas station','petrol'],
+    toilets: ['bano','banos','sanitario','toilet','restroom','bathroom','wc'],
+    fire_station: ['bomberos','incendio','fuego','fire']
+};
+
+const URGENT = new Set(['hospital', 'police', 'fire_station', 'pharmacy']);
+
+// Prepara cada intención una sola vez: palabras normalizadas + expresión regular por palabra completa
+// Las palabras extra van solo a la última intención de cada categoría (la más general)
+const lastIntentForValue = {};
+INTENTS.forEach((it, i) => { if (it.categoria) lastIntentForValue[it.categoria.value] = i; });
+
+const INTENT_MATCHERS = INTENTS.map((intent, idx) => {
+    const value = intent.categoria && intent.categoria.value;
+    const extra = lastIntentForValue[value] === idx ? (EXTRA_KEYWORDS[value] || []) : [];
+    const words = new Set([...intent.keywords, ...extra].map(normText));
+    const patterns = [...words].filter(w => w.length > 1).map(w => {
+        const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // palabra completa, con plural opcional
+        return { w, re: new RegExp(`(^|[^\\p{L}\\p{N}])${esc}(s|es)?(?=$|[^\\p{L}\\p{N}])`, 'u') };
+    });
+    return { intent, patterns, urgent: URGENT.has(value) };
+});
+
+/**
+ * Busca la intención que mejor coincide, mirando el texto traducido al español
+ * y también el original del turista. Gana la de mayor puntaje, no la primera.
+ */
+function detectIntent(...texts) {
+    const hay = texts.filter(Boolean).map(normText);
+    let best = null, bestScore = 0;
+    for (const m of INTENT_MATCHERS) {
+        let score = 0;
+        for (const p of m.patterns) {
+            if (hay.some(t => p.re.test(t))) score += p.w.length + (p.w.includes(' ') ? 4 : 0);
         }
+        if (score > 0 && m.urgent) score += 3;
+        if (score > bestScore) { best = m.intent; bestScore = score; }
     }
-    return null;
+    return best;
 }
 
 // --- Mapa ---
@@ -659,41 +713,172 @@ function initMap(lat, lng) {
 }
 
 // --- Buscar lugares en OSM (radio 2 km) ---
-async function searchPlaces(lat, lng, categoria) {
-    const { key, value } = categoria;
-    const radius = 2000;
+// Etiquetas de OpenStreetMap que cuentan para cada categoría
+const CATEGORY_TAGS = {
+    'amenity=hospital':       [['amenity', 'hospital|clinic|doctors'], ['healthcare', 'hospital|clinic|centre']],
+    'amenity=police':         [['amenity', 'police']],
+    'amenity=atm':            [['amenity', 'atm'], ['atm', 'yes']],
+    'amenity=bank':           [['amenity', 'bank']],
+    'amenity=cafe':           [['amenity', 'cafe'], ['shop', 'coffee']],
+    'amenity=pharmacy':       [['amenity', 'pharmacy'], ['healthcare', 'pharmacy']],
+    'amenity=restaurant':     [['amenity', 'restaurant|fast_food|food_court']],
+    'amenity=fast_food':      [['amenity', 'fast_food|restaurant']],
+    'amenity=bar':            [['amenity', 'bar|pub|nightclub']],
+    'amenity=ice_cream':      [['amenity', 'ice_cream'], ['shop', 'ice_cream']],
+    'amenity=payment_centre': [['amenity', 'payment_centre|payment_terminal'], ['vending', 'public_transport_tickets']],
+    'amenity=internet_cafe':  [['amenity', 'internet_cafe'], ['shop', 'mobile_phone|telecommunication']],
+    'shop=supermarket':       [['shop', 'supermarket|convenience']],
+    'shop=craft':             [['shop', 'craft|gift|souvenir|art']],
+    'shop=bakery':            [['shop', 'bakery|pastry|confectionery']],
+    'shop=laundry':           [['shop', 'laundry|dry_cleaning']],
+    'tourism=hotel':          [['tourism', 'hotel|hostel|guest_house|motel|apartment']]
+};
 
-    const query = `
-        [out:json][timeout:25];
-        (
-            node["${key}"="${value}"](around:${radius},${lat},${lng});
-            way["${key}"="${value}"](around:${radius},${lat},${lng});
-            relation["${key}"="${value}"](around:${radius},${lat},${lng});
-        );
-        out center 40;
-    `.trim();
+// Nombre en español para cada tipo de lugar (cuando OSM no tiene nombre)
+const TYPE_LABELS = {
+    hospital: 'Hospital', clinic: 'Clínica', doctors: 'Consultorio médico', centre: 'Centro de salud',
+    police: 'Comisaría', atm: 'Cajero automático', bank: 'Banco', cafe: 'Café', coffee: 'Café',
+    pharmacy: 'Farmacia', restaurant: 'Restaurante', fast_food: 'Comida rápida', food_court: 'Patio de comidas',
+    bar: 'Bar', pub: 'Pub', nightclub: 'Boliche', ice_cream: 'Heladería', supermarket: 'Supermercado',
+    convenience: 'Almacén', bakery: 'Panadería', hotel: 'Hotel', hostel: 'Hostel', guest_house: 'Hospedaje',
+    fuel: 'Estación de servicio', toilets: 'Baño público', fire_station: 'Bomberos', taxi: 'Parada de taxi',
+    parking: 'Estacionamiento', museum: 'Museo', post_office: 'Correo'
+};
 
-    const mirrors = [
-        'https://overpass-api.de/api/interpreter',
-        'https://overpass.kumi.systems/api/interpreter',
-        'https://overpass.private.coffee/api/interpreter'
-    ];
+const OVERPASS_MIRRORS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter'
+];
+const SEARCH_RADII = [1500, 4000, 10000]; // se agranda si no encuentra lo suficiente
+const MIN_RESULTS = 3;
+const placesCache = new Map(); // caché de 10 minutos en memoria
 
-    for (const mirror of mirrors) {
+function tagsFor(categoria) {
+    return CATEGORY_TAGS[`${categoria.key}=${categoria.value}`] || [[categoria.key, categoria.value]];
+}
+
+async function overpassQuery(query) {
+    const body = 'data=' + encodeURIComponent(query);
+    const controllers = [];
+    const attempts = OVERPASS_MIRRORS.map(async mirror => {
+        const ctrl = new AbortController();
+        controllers.push(ctrl);
+        const timer = setTimeout(() => ctrl.abort(), 12000);
         try {
-            const response = await fetch(mirror, {
+            const res = await fetch(mirror, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'data=' + encodeURIComponent(query)
+                body, signal: ctrl.signal
             });
-            if (!response.ok) continue;
-            const data = await response.json();
-            if (data.elements) return data.elements;
-        } catch (error) {
-            console.warn('Falló el mirror', mirror, error);
+            if (!res.ok) throw new Error(`${mirror} ${res.status}`);
+            const data = await res.json();
+            if (!Array.isArray(data.elements)) throw new Error('sin datos');
+            return data.elements;
+        } finally {
+            clearTimeout(timer);
         }
+    });
+    try {
+        // El primer servidor que responda gana; se cancelan los demás
+        const elements = await Promise.any(attempts);
+        controllers.forEach(c => c.abort());
+        return elements;
+    } catch (e) {
+        console.warn('Ningún servidor de mapas respondió', e);
+        return null;
     }
-    return [];
+}
+
+/**
+ * Busca lugares reales cerca de (lat, lng). Empieza con radio chico
+ * y lo agranda hasta encontrar al menos MIN_RESULTS.
+ * Devuelve lugares ya ordenados por distancia.
+ */
+async function searchPlaces(lat, lng, categoria, onProgress) {
+    const cacheKey = `${categoria.key}=${categoria.value}@${lat.toFixed(3)},${lng.toFixed(3)}`;
+    const hit = placesCache.get(cacheKey);
+    if (hit && Date.now() - hit.t < 10 * 60 * 1000) return hit.places;
+
+    const tags = tagsFor(categoria);
+    let places = [];
+    for (const radius of SEARCH_RADII) {
+        if (onProgress) onProgress(radius);
+        const parts = tags.map(([k, v]) =>
+            `nwr["${k}"~"^(${v})$"](around:${radius},${lat},${lng});`).join('\n');
+        const query = `[out:json][timeout:20];(\n${parts}\n);out center tags 100;`;
+        const elements = await overpassQuery(query);
+        if (elements === null) break; // sin servidores: no tiene sentido seguir
+        places = elements.map(el => toPlace(el, lat, lng)).filter(Boolean);
+        if (places.length >= MIN_RESULTS) break;
+    }
+
+    // Quitar duplicados (mismo lugar cargado como punto y como edificio)
+    const seen = new Set();
+    places = places
+        .sort((a, b) => a.distancia - b.distancia)
+        .filter(p => {
+            const k = `${normText(p.nombre)}|${p.lat.toFixed(3)}|${p.lng.toFixed(3)}`;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+        });
+
+    placesCache.set(cacheKey, { t: Date.now(), places });
+    return places;
+}
+
+function toPlace(el, userLat, userLng) {
+    const lat = el.lat ?? (el.center && el.center.lat);
+    const lng = el.lon ?? (el.center && el.center.lon);
+    if (lat == null || lng == null) return null;
+    const t = el.tags || {};
+    const type = t.amenity || t.healthcare || t.shop || t.tourism || t.vending || '';
+    const label = TYPE_LABELS[type] || '';
+    const calle = t['addr:street'] ? `${t['addr:street']} ${t['addr:housenumber'] || ''}`.trim() : '';
+    return {
+        nombre: t.name || t.brand || t.operator || label || 'Sin nombre',
+        tipo: label,
+        direccion: calle || 'Dirección no disponible',
+        lat, lng,
+        telefono: t.phone || t['contact:phone'] || '',
+        horario: t.opening_hours || '',
+        emergencia: t.emergency === 'yes' || type === 'hospital',
+        distancia: distanciaMetros(userLat, userLng, lat, lng),
+        fuente: 'osm'
+    };
+}
+
+function formatDistancia(m) {
+    if (m == null) return '';
+    const dist = m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
+    const minPie = Math.max(1, Math.round(m / 80));
+    const tiempo = m <= 2500 ? `${minPie} min a pie` : `${Math.max(1, Math.round(m / 400))} min en auto`;
+    return `${dist} · ${tiempo}`;
+}
+
+function linkComoLlegar(p) {
+    const mode = p.distancia != null && p.distancia > 2500 ? 'driving' : 'walking';
+    return `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=${mode}`;
+}
+
+// --- Ubicación del usuario ---
+let lastPosition = null;
+function getUserPosition() {
+    return new Promise(resolve => {
+        if (!navigator.geolocation) return resolve(null);
+        // Si tenemos una ubicación de hace menos de 2 minutos, se reutiliza al instante
+        if (lastPosition && Date.now() - lastPosition.t < 120000) return resolve(lastPosition);
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                lastPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude,
+                                 precision: pos.coords.accuracy, t: Date.now() };
+                resolve(lastPosition);
+            },
+            err => { console.warn('Geolocalización:', err); resolve(null); },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    });
 }
 
 // --- Distancia aproximada entre dos puntos (Haversine) ---
@@ -733,117 +918,124 @@ async function showIntentResponse(intent, userLat, userLng, targetLang) {
     if (hasTarget) speak(respuestaTarget, speechCode(targetLang));
 
     mapContainer.classList.remove('hidden');
+    renderEmergencyBanner(intent);
+
+    const value = intent.categoria && intent.categoria.value;
+    const tipoTexto = (TYPE_LABELS[value] || 'lugares').toLowerCase();
+    mapTitle.textContent = userLat ? `${TYPE_LABELS[value] || 'Lugares'} cerca tuyo` : 'Lugares de referencia';
 
     const baseLat = userLat || -24.7883;
     const baseLng = userLng || -65.4106;
-
-    updateStatus('Buscando lugares...');
     initMap(baseLat, baseLng);
     markersLayer.clearLayers();
-    placesList.innerHTML = '';
+    placesList.innerHTML = '<li class="cargando">Buscando cerca tuyo…</li>';
 
-    let todosLosLugares = [];
-
-    // 1) Lugares OSM cercanos al usuario (radio 2 km)
+    // 1) Lugares reales alrededor del usuario
+    let lugares = [];
+    let sinServidor = false;
     if (userLat && userLng && intent.categoria) {
-        const osmPlaces = await searchPlaces(userLat, userLng, intent.categoria);
-        osmPlaces.forEach(p => {
-            const pLat = p.lat || (p.center && p.center.lat);
-            const pLng = p.lon || (p.center && p.center.lon);
-            if (!pLat || !pLng) return;
-            const name = (p.tags && p.tags.name) || 'Sin nombre';
-            const address = (p.tags && p.tags['addr:street'])
-                ? `${p.tags['addr:street']} ${p.tags['addr:housenumber'] || ''}`.trim()
-                : 'Dirección no disponible';
-            todosLosLugares.push({
-                nombre: name,
-                direccion: address,
-                lat: pLat,
-                lng: pLng,
-                fuente: 'osm'
-            });
+        lugares = await searchPlaces(userLat, userLng, intent.categoria, radius => {
+            updateStatus(`Buscando ${tipoTexto} en ${radius >= 1000 ? radius / 1000 + ' km' : radius + ' m'}…`);
         });
+        sinServidor = lugares.length === 0;
     }
 
-    // 2) Lugares fijos
-    if (intent.lugares && intent.lugares.length > 0) {
-        intent.lugares.forEach(l => {
-            const duplicado = todosLosLugares.some(
-                x => x.nombre.toLowerCase().includes(l.nombre.toLowerCase().split(' ')[0])
-                  && Math.abs(x.lat - l.lat) < 0.0005
-                  && Math.abs(x.lng - l.lng) < 0.0005
-            );
-            if (!duplicado) {
-                todosLosLugares.push({
-                    nombre: l.nombre,
-                    direccion: l.direccion,
-                    lat: l.lat,
-                    lng: l.lng,
-                    fuente: 'fijo'
-                });
-            }
+    // 2) Lugares fijos de referencia (se agregan si no están repetidos)
+    (intent.lugares || []).forEach(l => {
+        const dup = lugares.some(x => Math.abs(x.lat - l.lat) < 0.0006 && Math.abs(x.lng - l.lng) < 0.0006);
+        if (dup) return;
+        lugares.push({
+            ...l,
+            fuente: 'fijo',
+            distancia: userLat ? distanciaMetros(userLat, userLng, l.lat, l.lng) : null
         });
-    }
+    });
 
-    // 3) Ordenar por distancia al usuario
-    if (userLat && userLng) {
-        todosLosLugares.forEach(l => {
-            l.distancia = distanciaMetros(userLat, userLng, l.lat, l.lng);
-        });
-        todosLosLugares.sort((a, b) => a.distancia - b.distancia);
-    } else {
-        // Sin ubicación: solo mostrar los fijos
-        todosLosLugares = todosLosLugares.filter(l => l.fuente === 'fijo');
-    }
+    if (userLat) lugares.sort((a, b) => (a.distancia ?? 1e9) - (b.distancia ?? 1e9));
+    lugares = lugares.slice(0, 15);
 
-    // 4) Dibujar
-    if (userLat && userLng) {
-        L.marker([userLat, userLng])
-            .addTo(markersLayer)
-            .bindPopup('Estás aquí')
-            .openPopup();
-    }
-
+    // 3) Dibujar
+    placesList.innerHTML = '';
     const bounds = [];
-    if (userLat && userLng) bounds.push([userLat, userLng]);
+    if (userLat && userLng) {
+        L.circleMarker([userLat, userLng], {
+            radius: 8, color: '#fff', weight: 3, fillColor: '#1d6fa5', fillOpacity: 1
+        }).addTo(markersLayer).bindPopup('Estás aquí');
+        bounds.push([userLat, userLng]);
+    }
 
-    if (todosLosLugares.length === 0) {
-        placesList.innerHTML = '<li>No se encontraron lugares cercanos. Mirá las direcciones de arriba.</li>';
-        updateStatus('Sin resultados en el mapa. Las direcciones están arriba.');
+    if (lugares.length === 0) {
+        placesList.innerHTML = `<li class="sin-resultados">No encontramos ${escapeHtml(tipoTexto)} cerca.
+            <a href="https://www.google.com/maps/search/${encodeURIComponent(TYPE_LABELS[value] || intent.keywords[0])}/@${baseLat},${baseLng},15z"
+               target="_blank" rel="noopener">Buscar en Google Maps</a></li>`;
+        updateStatus(sinServidor ? 'El servicio de mapas no respondió. Probá de nuevo en un momento.' : 'Sin resultados cercanos.', sinServidor);
         return;
     }
 
-    todosLosLugares.forEach(l => {
+    lugares.forEach((l, i) => {
         const color = l.fuente === 'fijo' ? '#0b3558' : '#b91c1c';
         const icon = L.divIcon({
             className: 'custom-marker',
-            html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`,
-            iconSize: [14, 14]
+            html: `<div class="pin" style="background:${color}">${i + 1}</div>`,
+            iconSize: [24, 24], iconAnchor: [12, 12]
         });
-
-        L.marker([l.lat, l.lng], { icon })
-            .addTo(markersLayer)
-            .bindPopup(`<strong>${l.nombre}</strong><br>${l.direccion}`);
-
+        const nombre = escapeHtml(l.nombre);
+        const comoLlegar = `<a href="${linkComoLlegar(l)}" target="_blank" rel="noopener">Cómo llegar</a>`;
+        L.marker([l.lat, l.lng], { icon }).addTo(markersLayer)
+            .bindPopup(`<strong>${nombre}</strong><br>${escapeHtml(l.direccion)}<br>${comoLlegar}`);
         bounds.push([l.lat, l.lng]);
 
         const li = document.createElement('li');
-        const etiqueta = l.fuente === 'fijo' ? '⭐' : '📍';
-        const dist = l.distancia ? ` · ${Math.round(l.distancia)} m` : '';
-        li.innerHTML = `<strong>${etiqueta} ${l.nombre}</strong><small>${l.direccion}${dist}</small>`;
-        li.addEventListener('click', () => map.setView([l.lat, l.lng], 17));
+        li.className = 'lugar';
+        const tel = l.telefono ? l.telefono.split(';')[0].trim() : '';
+        li.innerHTML = `
+            <div class="lugar-num" style="background:${color}">${i + 1}</div>
+            <div class="lugar-info">
+                <strong>${nombre}</strong>
+                ${l.tipo && l.tipo !== l.nombre ? `<span class="lugar-tipo">${escapeHtml(l.tipo)}</span>` : ''}
+                ${l.emergencia ? '<span class="badge-guardia">Guardia</span>' : ''}
+                ${l.fuente === 'fijo' ? '<span class="badge-fijo">⭐ Recomendado</span>' : ''}
+                <small>${escapeHtml(l.direccion)}</small>
+                ${l.distancia != null ? `<small class="lugar-dist">${formatDistancia(l.distancia)}</small>` : ''}
+                ${l.horario ? `<small class="lugar-horario">🕒 ${escapeHtml(l.horario === '24/7' ? 'Abierto 24 hs' : l.horario)}</small>` : ''}
+                <div class="lugar-acciones">
+                    <a class="btn-mini" href="${linkComoLlegar(l)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>
+                    ${tel ? `<a class="btn-mini" href="tel:${tel.replace(/[^\d+]/g, '')}">📞 Llamar</a>` : ''}
+                </div>
+            </div>`;
+        li.querySelector('.lugar-info strong').addEventListener('click', () => map.setView([l.lat, l.lng], 17));
         placesList.appendChild(li);
     });
 
     if (bounds.length > 1) {
-        map.fitBounds(bounds, { padding: [30, 30] });
-    } else if (bounds.length === 1) {
+        // Encuadrar al usuario y los 5 más cercanos para que se vea bien el entorno
+        map.fitBounds(bounds.slice(0, userLat ? 6 : bounds.length), { padding: [30, 30], maxZoom: 16 });
+    } else {
         map.setView(bounds[0], 15);
     }
 
-    const fijos = todosLosLugares.filter(l => l.fuente === 'fijo').length;
-    const osm = todosLosLugares.filter(l => l.fuente === 'osm').length;
-    updateStatus(`Mostrando ${todosLosLugares.length} lugares (${fijos} ⭐ fijos + ${osm} 📍 cercanos).`);
+    const cerca = lugares[0];
+    updateStatus(userLat && cerca.distancia != null
+        ? `El más cercano: ${cerca.nombre}, a ${formatDistancia(cerca.distancia)}.`
+        : `Mostrando ${lugares.length} lugares de referencia (activá la ubicación para ver los cercanos).`);
+}
+
+// Números de emergencia para categorías urgentes
+function renderEmergencyBanner(intent) {
+    const value = intent.categoria && intent.categoria.value;
+    const old = document.getElementById('emergency-banner');
+    if (old) old.remove();
+    if (!URGENT.has(value) || value === 'pharmacy') return;
+    const div = document.createElement('div');
+    div.id = 'emergency-banner';
+    div.className = 'emergency-banner';
+    div.innerHTML = `<strong>¿Es una emergencia? / Emergency?</strong>
+        <div class="emergency-links">
+            <a href="tel:107">🚑 107 Ambulancia</a>
+            <a href="tel:911">🚓 911 Policía</a>
+            <a href="tel:100">🚒 100 Bomberos</a>
+        </div>`;
+    mapContainer.prepend(div);
 }
 
 // --- Reconocimiento de voz ---
@@ -938,24 +1130,14 @@ async function handleTranslate() {
     const visitorLang = langCode !== 'auto' ? langCode : detected;
     if (visitorLang && visitorLang !== 'es') lastVisitorLang = visitorLang;
 
-    const intent = detectIntent(textoEs);
+    const intent = detectIntent(textoEs, text);
     const targetForReply = visitorLang && visitorLang !== 'es' ? visitorLang : null;
 
     if (intent) {
-        if (navigator.geolocation) {
-            updateStatus('Obteniendo ubicación...');
-            navigator.geolocation.getCurrentPosition(
-                (pos) => showIntentResponse(intent, pos.coords.latitude, pos.coords.longitude, targetForReply),
-                (err) => {
-                    console.error('Geolocalización:', err);
-                    updateStatus('Sin ubicación. Mostrando lugares de referencia.', true);
-                    showIntentResponse(intent, null, null, targetForReply);
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        } else {
-            showIntentResponse(intent, null, null, targetForReply);
-        }
+        updateStatus('Obteniendo tu ubicación...');
+        const pos = await getUserPosition();
+        if (!pos) updateStatus('Sin ubicación. Mostrando lugares de referencia.', true);
+        await showIntentResponse(intent, pos && pos.lat, pos && pos.lng, targetForReply);
     } else {
         const origen = visitorLang ? langName(visitorLang).toUpperCase() : 'DETECTADO';
         showResult(textoEs, 'es', `${origen} → ESPAÑOL`);
