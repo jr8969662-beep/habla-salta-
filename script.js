@@ -434,6 +434,15 @@ const btnCopiar = document.getElementById('btn-copiar');
 const intentResponse = document.getElementById('intent-response');
 const mapContainer = document.getElementById('map-container');
 const placesList = document.getElementById('places-list');
+const btnDireccion = document.getElementById('btn-direccion');
+const labelTexto = document.getElementById('label-texto');
+const notaIdioma = document.getElementById('nota-idioma');
+const resultLabel = document.getElementById('resultado-label');
+
+// 'toEs' = el visitante habla, se traduce al español
+// 'fromEs' = vos respondés en español, se traduce a su idioma
+let direction = 'toEs';
+let lastVisitorLang = null; // último idioma detectado/elegido del visitante
 
 // --- Utilidades ---
 function updateStatus(message, isError = false) {
@@ -450,16 +459,177 @@ function speak(text, langCode) {
     }
 }
 
-// --- Traducción genérica ---
-async function translateText(text, fromLang, toLang) {
-    const url = `${CONFIG.translationApi}?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
-    const data = await response.json();
-    if (!data.responseData || !data.responseData.translatedText) {
-        throw new Error('La API no devolvió una traducción válida.');
+// --- Motor de traducción ---
+// Usa Google (gtx) como servicio principal y MyMemory como respaldo.
+// Detecta el idioma, guarda en caché, corta textos largos y limpia el resultado.
+
+const TRANSLATE_TIMEOUT_MS = 8000;
+const CACHE_KEY = 'hablaSaltaCache_v1';
+const CACHE_MAX = 300;
+
+// Código interno -> código de cada servicio
+function apiCode(code) {
+    if (!code || code === 'auto' || code === 'Autodetect') return 'auto';
+    const map = { zh: 'zh-CN', he: 'iw' };
+    return map[code] || code;
+}
+
+// Código devuelto por un servicio -> código interno de la app
+function normalizeLang(code) {
+    if (!code) return null;
+    const c = code.toLowerCase();
+    if (c.startsWith('zh')) return 'zh';
+    if (c === 'iw') return 'he';
+    return c.split('-')[0];
+}
+
+function decodeEntities(str) {
+    const t = document.createElement('textarea');
+    t.innerHTML = str;
+    return t.value;
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, ch => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+    ));
+}
+
+async function fetchWithTimeout(url, ms = TRANSLATE_TIMEOUT_MS) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+        return await fetch(url, { signal: ctrl.signal });
+    } finally {
+        clearTimeout(timer);
     }
-    return data.responseData.translatedText;
+}
+
+// Divide el texto en partes de hasta maxLen caracteres, respetando oraciones
+function splitText(text, maxLen) {
+    if (text.length <= maxLen) return [text];
+    const sentences = text.match(/[^.!?。！？\n]+[.!?。！？\n]*/g) || [text];
+    const chunks = [];
+    let current = '';
+    for (const s of sentences) {
+        if ((current + s).length > maxLen && current) {
+            chunks.push(current);
+            current = '';
+        }
+        if (s.length > maxLen) {
+            for (let i = 0; i < s.length; i += maxLen) chunks.push(s.slice(i, i + maxLen));
+        } else {
+            current += s;
+        }
+    }
+    if (current) chunks.push(current);
+    return chunks;
+}
+
+// Caché persistente (localStorage) para no repetir pedidos
+const translationCache = (() => {
+    let store = {};
+    try { store = JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; } catch (e) { store = {}; }
+    const save = () => {
+        try {
+            const keys = Object.keys(store);
+            if (keys.length > CACHE_MAX) keys.slice(0, keys.length - CACHE_MAX).forEach(k => delete store[k]);
+            localStorage.setItem(CACHE_KEY, JSON.stringify(store));
+        } catch (e) { /* almacenamiento lleno o bloqueado */ }
+    };
+    return {
+        get: k => store[k],
+        set: (k, v) => { delete store[k]; store[k] = v; save(); }
+    };
+})();
+
+// Proveedor 1: Google Translate (endpoint público gtx)
+async function translateWithGoogle(text, from, to) {
+    const parts = splitText(text, 1800);
+    let out = '';
+    let detected = null;
+    for (const part of parts) {
+        const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t'
+            + `&sl=${apiCode(from)}&tl=${apiCode(to)}&q=${encodeURIComponent(part)}`;
+        const res = await fetchWithTimeout(url);
+        if (!res.ok) throw new Error(`Google ${res.status}`);
+        const data = await res.json();
+        if (!Array.isArray(data) || !Array.isArray(data[0])) throw new Error('Respuesta inválida de Google');
+        out += data[0].map(seg => seg[0] || '').join('');
+        if (!detected && data[2]) detected = data[2];
+    }
+    if (!out.trim()) throw new Error('Traducción vacía');
+    return { text: out, detected: normalizeLang(detected) || (from !== 'auto' ? from : null), provider: 'google' };
+}
+
+// Proveedor 2: MyMemory (respaldo)
+async function translateWithMyMemory(text, from, to) {
+    const src = apiCode(from) === 'auto' ? 'Autodetect' : (from === 'zh' ? 'zh-CN' : from);
+    const tgt = to === 'zh' ? 'zh-CN' : to;
+    const parts = splitText(text, 450);
+    let out = [];
+    let detected = null;
+    for (const part of parts) {
+        const url = `${CONFIG.translationApi}?q=${encodeURIComponent(part)}&langpair=${src}|${tgt}`;
+        const res = await fetchWithTimeout(url);
+        if (!res.ok) throw new Error(`MyMemory ${res.status}`);
+        const data = await res.json();
+        const t = data.responseData && data.responseData.translatedText;
+        if (!t || data.responseStatus >= 400 || /MYMEMORY WARNING|QUERY LENGTH LIMIT|INVALID LANGUAGE PAIR/i.test(t)) {
+            throw new Error(data.responseDetails || 'MyMemory no devolvió una traducción válida');
+        }
+        out.push(decodeEntities(t));
+        if (!detected && data.responseData.detectedLanguage) detected = data.responseData.detectedLanguage;
+    }
+    return { text: out.join(' '), detected: normalizeLang(detected) || (from !== 'auto' ? from : null), provider: 'mymemory' };
+}
+
+/**
+ * Traduce y devuelve { text, detected, provider }.
+ * from puede ser 'auto'. Prueba cada proveedor en orden hasta que uno funcione.
+ */
+async function translateFull(text, from, to) {
+    from = normalizeLang(from === 'Autodetect' ? 'auto' : from) || 'auto';
+    to = normalizeLang(to);
+    if (!text.trim()) return { text: '', detected: from, provider: 'none' };
+    if (from === to) return { text, detected: from, provider: 'none' };
+
+    const key = `${from}|${to}|${text}`;
+    const cached = translationCache.get(key);
+    if (cached) return { ...cached, provider: 'cache' };
+
+    if (!navigator.onLine) throw new Error('Sin conexión a internet.');
+
+    const providers = [translateWithGoogle, translateWithMyMemory];
+    let lastError;
+    for (const provider of providers) {
+        try {
+            const result = await provider(text, from, to);
+            // Si el texto ya estaba en el idioma destino, no hace falta traducir
+            if (result.detected === to) result.text = text;
+            translationCache.set(key, { text: result.text, detected: result.detected });
+            return result;
+        } catch (e) {
+            console.warn(`Falló ${provider.name}:`, e);
+            lastError = e;
+        }
+    }
+    throw new Error(lastError && lastError.name === 'AbortError'
+        ? 'El servicio de traducción tardó demasiado. Probá de nuevo.'
+        : 'No se pudo traducir ahora. Revisá tu conexión e intentá de nuevo.');
+}
+
+// Compatibilidad: devuelve solo el texto
+async function translateText(text, fromLang, toLang) {
+    return (await translateFull(text, fromLang, toLang)).text;
+}
+
+function langName(code) {
+    return (CONFIG.languages[code] && CONFIG.languages[code].name) || code.toUpperCase();
+}
+
+function speechCode(code) {
+    return (CONFIG.languages[code] && CONFIG.languages[code].speech) || code;
 }
 
 // --- Detección de intenciones ---
@@ -539,31 +709,28 @@ function distanciaMetros(lat1, lng1, lat2, lng2) {
 
 // --- Respuesta de intención con sistema híbrido ---
 async function showIntentResponse(intent, userLat, userLng, targetLang) {
-    let respuestaTarget;
-    const langCfg = CONFIG.languages[targetLang];
+    let respuestaTarget = intent.respuesta_es;
+    const hasTarget = targetLang && targetLang !== 'auto' && targetLang !== 'es';
 
-    if (targetLang === 'auto') {
-        respuestaTarget = intent.respuesta_es;
-    } else if (intent['respuesta_' + targetLang]) {
+    if (hasTarget && intent['respuesta_' + targetLang]) {
         respuestaTarget = intent['respuesta_' + targetLang];
-    } else {
+    } else if (hasTarget) {
         try {
-            respuestaTarget = await translateText(intent.respuesta_es, 'es', langCfg.source);
+            respuestaTarget = await translateText(intent.respuesta_es, 'es', targetLang);
         } catch (e) {
             console.warn('No se pudo traducir la respuesta:', e);
-            respuestaTarget = intent.respuesta_es;
         }
     }
 
     intentResponse.innerHTML = `
-        <p class="intent-es">${intent.respuesta_es}</p>
-        <p class="intent-target">${respuestaTarget}</p>
+        <p class="intent-es">${escapeHtml(intent.respuesta_es)}</p>
+        ${hasTarget && respuestaTarget !== intent.respuesta_es
+            ? `<p class="intent-target" lang="${targetLang}">${escapeHtml(respuestaTarget)}</p>` : ''}
     `;
     intentResponse.classList.remove('hidden');
     resultadoDiv.classList.add('hidden');
 
-    const speechLang = (langCfg && langCfg.speech) || 'es-ES';
-    if (targetLang !== 'auto') speak(respuestaTarget, speechLang);
+    if (hasTarget) speak(respuestaTarget, speechCode(targetLang));
 
     mapContainer.classList.remove('hidden');
 
@@ -724,44 +891,99 @@ async function handleTranslate() {
     }
 
     const langCode = idiomaSelect.value;
-    const lang = CONFIG.languages[langCode];
 
-    updateStatus('Traduciendo...');
     resultadoDiv.classList.add('hidden');
     intentResponse.classList.add('hidden');
     mapContainer.classList.add('hidden');
 
-    let textoEs;
-    try {
-        textoEs = await translateText(text, lang.source, 'es');
-    } catch (error) {
-        console.error('Error en la traducción:', error);
-        updateStatus(`Error: ${error.message}`, true);
+    // --- Modo respuesta: español -> idioma del visitante ---
+    if (direction === 'fromEs') {
+        const target = langCode !== 'auto' ? langCode : lastVisitorLang;
+        if (!target) {
+            updateStatus('Elegí el idioma del visitante (o traducí primero algo que él diga).', true);
+            return;
+        }
+        updateStatus('Traduciendo...');
+        btnTraducir.disabled = true;
+        try {
+            const r = await translateFull(text, 'es', target);
+            showResult(r.text, target, `ESPAÑOL → ${langName(target).toUpperCase()}`);
+            speak(r.text, speechCode(target));
+            updateStatus('Traducción lista. Mostrale la pantalla o tocá 🔊.');
+        } catch (error) {
+            updateStatus(error.message, true);
+        } finally {
+            btnTraducir.disabled = false;
+        }
         return;
     }
 
+    // --- Modo normal: idioma del visitante -> español ---
+    updateStatus('Traduciendo...');
+    btnTraducir.disabled = true;
+    let textoEs, detected;
+    try {
+        const r = await translateFull(text, langCode, 'es');
+        textoEs = r.text;
+        detected = r.detected;
+    } catch (error) {
+        console.error('Error en la traducción:', error);
+        updateStatus(error.message, true);
+        return;
+    } finally {
+        btnTraducir.disabled = false;
+    }
+
+    // Idioma real del visitante: el elegido o el detectado
+    const visitorLang = langCode !== 'auto' ? langCode : detected;
+    if (visitorLang && visitorLang !== 'es') lastVisitorLang = visitorLang;
+
     const intent = detectIntent(textoEs);
+    const targetForReply = visitorLang && visitorLang !== 'es' ? visitorLang : null;
 
     if (intent) {
         if (navigator.geolocation) {
             updateStatus('Obteniendo ubicación...');
             navigator.geolocation.getCurrentPosition(
-                (pos) => showIntentResponse(intent, pos.coords.latitude, pos.coords.longitude, langCode),
+                (pos) => showIntentResponse(intent, pos.coords.latitude, pos.coords.longitude, targetForReply),
                 (err) => {
                     console.error('Geolocalización:', err);
                     updateStatus('Sin ubicación. Mostrando lugares de referencia.', true);
-                    showIntentResponse(intent, null, null, langCode);
+                    showIntentResponse(intent, null, null, targetForReply);
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
             );
         } else {
-            showIntentResponse(intent, null, null, langCode);
+            showIntentResponse(intent, null, null, targetForReply);
         }
     } else {
-        translationResult.textContent = textoEs;
-        resultadoDiv.classList.remove('hidden');
-        updateStatus('Traducción completada.');
+        const origen = visitorLang ? langName(visitorLang).toUpperCase() : 'DETECTADO';
+        showResult(textoEs, 'es', `${origen} → ESPAÑOL`);
+        updateStatus(langCode === 'auto' && detected
+            ? `Idioma detectado: ${langName(detected)}.`
+            : 'Traducción completada.');
     }
+}
+
+function showResult(text, lang, label) {
+    translationResult.textContent = text;
+    translationResult.setAttribute('lang', lang);
+    translationResult.dataset.lang = lang;
+    resultLabel.textContent = label || 'TRADUCCIÓN';
+    resultadoDiv.classList.remove('hidden');
+}
+
+// --- Dirección de traducción ---
+function updateDirectionUI() {
+    const toEs = direction === 'toEs';
+    btnDireccion.textContent = toEs ? '⇄ Visitante → Español' : '⇄ Español → Visitante';
+    btnDireccion.classList.toggle('activo', !toEs);
+    btnDireccion.setAttribute('aria-pressed', String(!toEs));
+    labelTexto.textContent = toEs ? '¿Qué quiere decir?' : '¿Qué le querés responder?';
+    textoEntrada.placeholder = toEs ? 'Escribí o dictá la frase...' : 'Escribí o dictá tu respuesta en español...';
+    notaIdioma.textContent = toEs
+        ? 'La traducción se muestra en español.'
+        : 'Tu respuesta se traduce al idioma del visitante.';
 }
 
 // --- Event Listeners ---
@@ -770,18 +992,37 @@ btnHablar.addEventListener('click', () => {
     if (isListening) {
         recognition.stop();
     } else {
-        const langCode = idiomaSelect.value;
-        const cfg = CONFIG.languages[langCode];
-        recognition.lang = (cfg && cfg.speech) || navigator.language || 'en-US';
+        if (direction === 'fromEs') {
+            recognition.lang = 'es-AR';
+        } else {
+            const langCode = idiomaSelect.value !== 'auto' ? idiomaSelect.value : lastVisitorLang;
+            recognition.lang = (langCode && speechCode(langCode)) || navigator.language || 'en-US';
+        }
         recognition.start();
     }
 });
 
 btnTraducir.addEventListener('click', handleTranslate);
 
+// Ctrl/Cmd + Enter traduce
+textoEntrada.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleTranslate();
+});
+
+btnDireccion.addEventListener('click', () => {
+    direction = direction === 'toEs' ? 'fromEs' : 'toEs';
+    textoEntrada.value = '';
+    resultadoDiv.classList.add('hidden');
+    intentResponse.classList.add('hidden');
+    mapContainer.classList.add('hidden');
+    updateDirectionUI();
+    textoEntrada.focus();
+});
+
 btnEscuchar.addEventListener('click', () => {
     const texto = translationResult.textContent;
-    if (texto) speak(texto, 'es-ES');
+    const lang = translationResult.dataset.lang || 'es';
+    if (texto) speak(texto, lang === 'es' ? 'es-AR' : speechCode(lang));
 });
 
 btnCopiar.addEventListener('click', () => {

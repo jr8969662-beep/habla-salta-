@@ -388,3 +388,24 @@ footer {
 .hidden {
     display: none !important;
 }
+
+/* Botón de dirección de traducción */
+.btn-direccion {
+    margin-top: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--azul-oscuro);
+    border-radius: var(--border-radius);
+    background: transparent;
+    color: var(--azul-oscuro);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-direccion:hover { background: var(--celeste); }
+.btn-direccion.activo {
+    background: var(--azul-oscuro);
+    color: var(--blanco);
+}
+.btn-traducir:disabled { opacity: 0.6; cursor: wait; }

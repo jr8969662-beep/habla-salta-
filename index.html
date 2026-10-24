@@ -49,12 +49,13 @@
                     <option value="ru">🇷🇺 Русский</option>
                     <option value="he">🇮🇱 עברית</option>
                 </select>
-                <p class="nota">La traducción siempre se muestra en español.</p>
+                <p id="nota-idioma" class="nota">La traducción se muestra en español.</p>
+                <button id="btn-direccion" class="btn-direccion" type="button" aria-pressed="false">⇄ Visitante → Español</button>
             </div>
 
             <div class="form-group">
                 <div class="label-row">
-                    <label for="texto-entrada">¿Qué quiere decir?</label>
+                    <label id="label-texto" for="texto-entrada">¿Qué quiere decir?</label>
                     <button id="btn-hablar" class="btn-hablar">🎙️ Hablar</button>
                 </div>
                 <textarea id="texto-entrada" placeholder="Escribí o dictá la frase..."></textarea>
@@ -64,7 +65,7 @@
             <button id="btn-traducir" class="btn-traducir">Traducir ahora</button>
 
             <div id="resultado" class="resultado hidden">
-                <p class="resultado-label">TRADUCCIÓN</p>
+                <p id="resultado-label" class="resultado-label">TRADUCCIÓN</p>
                 <p id="translation-result" class="resultado-texto"></p>
                 <div class="resultado-botones">
                     <button id="btn-escuchar" class="btn-secundario">🔊 Escuchar</button>
