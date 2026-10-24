@@ -73,7 +73,7 @@ async function searchPlacesOffline(lat, lng, categoria) {
 // --- Descarga ---
 let downloading = false;
 
-async function fetchInBatches(urls, cache, onStep, concurrency = 6) {
+async function fetchInBatches(urls, cache, onStep, concurrency = 10) {
     let i = 0, ok = 0, fail = 0;
     async function worker() {
         while (i < urls.length && downloading) {
@@ -99,65 +99,61 @@ async function fetchInBatches(urls, cache, onStep, concurrency = 6) {
 const OVERPASS_DESCARGA = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.private.coffee/api/interpreter',
-    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter'
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
 ];
-async function overpassOneByOne(query) {
-    for (let intento = 0; intento < 2; intento++) {
-        for (const url of OVERPASS_DESCARGA) {
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 70000);
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'data=' + encodeURIComponent(query),
-                    signal: ctrl.signal
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data.elements)) return data.elements;
-                }
-                console.warn('Overpass', url, res.status);
-            } catch (e) {
-                console.warn('Overpass', url, e.message);
-            } finally {
-                clearTimeout(timer);
+async function overpassOneByOne(query, desfase = 0) {
+    // Cada consulta empieza por un servidor distinto, así no se saturan
+    const lista = OVERPASS_DESCARGA.slice(desfase % OVERPASS_DESCARGA.length)
+        .concat(OVERPASS_DESCARGA.slice(0, desfase % OVERPASS_DESCARGA.length));
+    for (const url of lista) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 30000);
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'data=' + encodeURIComponent(query),
+                signal: ctrl.signal
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.elements)) return data.elements;
             }
+            console.warn('Overpass', url, res.status);
+        } catch (e) {
+            console.warn('Overpass', url, e.message);
+        } finally {
+            clearTimeout(timer);
         }
-        await new Promise(r => setTimeout(r, 3000)); // esperar y reintentar
     }
     return null;
 }
 
 async function downloadPlaces() {
-    // Se pide por partes chicas (una consulta gigante la rechazan los servidores)
-    const seen = new Set();
-    const parts = [];
+    // Se agrupan los valores por etiqueta: una sola expresión por etiqueta (consulta liviana)
+    const porClave = {};
     const [s, w, n, e] = PLACES_BBOX;
     INTENTS.forEach(it => {
         if (!it.categoria) return;
         tagsFor(it.categoria).forEach(([k, v]) => {
-            const key = `${k}=${v}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-            parts.push(`nwr["${k}"~"^(${v})$"](${s},${w},${n},${e});`);
+            (porClave[k] = porClave[k] || new Set());
+            v.split('|').forEach(x => porClave[k].add(x));
         });
     });
-    const GRUPO = 5;
+    const linea = k => `nwr["${k}"~"^(${[...porClave[k]].join('|')})$"](${s},${w},${n},${e});`;
+    const claves = Object.keys(porClave);
+    // 2 consultas: 'amenity' (la más grande) y todo lo demás, en paralelo en servidores distintos
+    const consultas = [
+        claves.filter(k => k === 'amenity'),
+        claves.filter(k => k !== 'amenity')
+    ].filter(g => g.length).map(g => `[out:json][timeout:40];(\n${g.map(linea).join('\n')}\n);out center tags;`);
+
+    setOfflineStatus('Descargando hospitales, comisarías, cajeros, cafés…');
+    const resultados = await Promise.all(consultas.map((q, i) => overpassOneByOne(q, i)));
     const byId = new Map();
-    let fallidos = 0;
-    const total = Math.ceil(parts.length / GRUPO);
-    for (let i = 0; i < parts.length && downloading; i += GRUPO) {
-        const query = `[out:json][timeout:60];(\n${parts.slice(i, i + GRUPO).join('\n')}\n);out center tags;`;
-        setOfflineStatus(`Descargando lugares: parte ${i / GRUPO + 1} de ${total}…`);
-        setProgress((i / GRUPO) / total);
-        const els = await overpassOneByOne(query);
-        if (!els) { fallidos++; continue; }
-        els.forEach(el => byId.set(el.id != null ? `${el.type}/${el.id}` : `${el.lat ?? (el.center && el.center.lat)},${el.lon ?? (el.center && el.center.lon)}`, el));
-    }
+    resultados.forEach(els => (els || []).forEach(el =>
+        byId.set(el.id != null ? `${el.type}/${el.id}` : `${el.lat},${el.lon}`, el)));
     if (byId.size === 0) throw new Error('No respondió el servidor de lugares');
-    if (fallidos) console.warn(`Faltaron ${fallidos} partes de lugares`);
     const elements = [...byId.values()];
 
     // Guardar solo lo necesario para que ocupe poco
@@ -227,7 +223,11 @@ async function startOfflineDownload() {
         setStep('lugares', 'cargando');
         setOfflineStatus('Descargando hospitales, comisarías, cajeros, cafés…');
         let nLugares = 0;
-        try { nLugares = await downloadPlaces(); setStep('lugares', 'ok'); }
+        const prev = getOfflineMeta();
+        let lugaresNuevos = false;
+        if (prev && prev.lugares && Date.now() - (prev.fechaLugares || 0) < 7 * 864e5) {
+            nLugares = prev.lugares; setStep('lugares', 'ok');   // ya están y son recientes
+        } else try { nLugares = await downloadPlaces(); lugaresNuevos = true; setStep('lugares', 'ok'); }
         catch (e) { console.warn(e); setStep('lugares', 'error'); }
 
         setStep('frases', 'cargando');
@@ -242,6 +242,7 @@ async function startOfflineDownload() {
         meta.fecha = Date.now();
         meta.tiles = r.ok;
         meta.lugares = nLugares || meta.lugares || 0;
+        if (lugaresNuevos) meta.fechaLugares = Date.now();
         if (lang && !meta.langs.includes(lang)) meta.langs.push(lang);
         setOfflineMeta(meta);
         setProgress(1);
