@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b3558">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
 
     <title>Hablá Salta - Traductor de Voz para Turistas en Salta</title>
     <meta name="description" content="Herramienta de traducción de voz gratuita para turistas y locales en Salta, Argentina. Hablá y entendé en varios idiomas al instante.">
@@ -23,6 +26,31 @@
     </script>
 </head>
 <body>
+    <button id="btn-offline" class="btn-offline" aria-label="Descargar para usar sin internet" title="Descargar para usar sin internet">
+        <span class="offline-icon">⬇️</span>
+    </button>
+    <div id="offline-banner" class="offline-banner hidden"></div>
+
+    <div id="offline-panel" class="offline-panel hidden" role="dialog" aria-labelledby="offline-titulo">
+        <div class="offline-box">
+            <button id="offline-cerrar" class="offline-cerrar" aria-label="Cerrar">✕</button>
+            <h2 id="offline-titulo">Usar sin internet</h2>
+            <p class="nota">Descargá todo una vez con Wi-Fi y la app funciona en la Quebrada, en la ruta o donde no haya señal.</p>
+            <ul class="offline-pasos">
+                <li data-step="app">📱 La app completa</li>
+                <li data-step="mapa">🗺️ Mapa de la provincia, la ciudad y el centro en detalle</li>
+                <li data-step="lugares">🏥 Hospitales, comisarías, farmacias, cajeros, cafés y más</li>
+                <li data-step="frases">💬 Frases rápidas y respuestas en el idioma elegido arriba</li>
+            </ul>
+            <p id="offline-tamano" class="nota"></p>
+            <div class="offline-progreso"><div id="offline-bar"></div></div>
+            <p id="offline-status" class="offline-status"></p>
+            <button id="btn-descargar-todo" class="btn-traducir">⬇️ Descargar todo</button>
+            <p id="offline-info" class="offline-info"></p>
+            <p class="nota">Sin internet funcionan: mapa, lugares cercanos (el GPS anda sin señal), frases rápidas, historial y textos ya traducidos. Traducir texto nuevo y el dictado por voz necesitan conexión.</p>
+            <button id="btn-borrar-offline" class="btn-link" type="button">Borrar descarga</button>
+        </div>
+    </div>
     <button id="theme-toggle" class="theme-toggle" aria-label="Cambiar tema">
         <span id="theme-icon">🌙</span>
     </button>
@@ -105,5 +133,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
+    <script src="offline.js"></script>
 </body>
 </html>

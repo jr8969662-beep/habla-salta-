@@ -621,7 +621,7 @@ async function translateFull(text, from, to) {
     const cached = translationCache.get(key);
     if (cached) return { ...cached, provider: 'cache' };
 
-    if (!navigator.onLine) throw new Error('Sin conexión a internet.');
+    if (!navigator.onLine) throw new Error('Sin internet no se puede traducir texto nuevo. Usá las frases rápidas o el historial.');
 
     const providers = [translateWithGoogle, translateWithMyMemory];
     let lastError;
@@ -724,8 +724,9 @@ function detectIntent(...texts) {
 function initMap(lat, lng) {
     if (!map) {
         map = L.map('map').setView([lat, lng], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors © CARTO',
+            subdomains: 'abcd',
             maxZoom: 19
         }).addTo(map);
         markersLayer = L.layerGroup().addTo(map);
@@ -781,13 +782,13 @@ function tagsFor(categoria) {
     return CATEGORY_TAGS[`${categoria.key}=${categoria.value}`] || [[categoria.key, categoria.value]];
 }
 
-async function overpassQuery(query) {
+async function overpassQuery(query, timeoutMs = 12000) {
     const body = 'data=' + encodeURIComponent(query);
     const controllers = [];
     const attempts = OVERPASS_MIRRORS.map(async mirror => {
         const ctrl = new AbortController();
         controllers.push(ctrl);
-        const timer = setTimeout(() => ctrl.abort(), 12000);
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
         try {
             const res = await fetch(mirror, {
                 method: 'POST',
@@ -823,6 +824,12 @@ async function searchPlaces(lat, lng, categoria, onProgress) {
     const hit = placesCache.get(cacheKey);
     if (hit && Date.now() - hit.t < 10 * 60 * 1000) return hit.places;
 
+    // Sin internet: usar los lugares descargados
+    if (!navigator.onLine && typeof searchPlacesOffline === 'function') {
+        const off = await searchPlacesOffline(lat, lng, categoria);
+        if (off) return off;
+    }
+
     const tags = tagsFor(categoria);
     let places = [];
     for (const radius of SEARCH_RADII) {
@@ -831,7 +838,14 @@ async function searchPlaces(lat, lng, categoria, onProgress) {
             `nwr["${k}"~"^(${v})$"](around:${radius},${lat},${lng});`).join('\n');
         const query = `[out:json][timeout:20];(\n${parts}\n);out center tags 100;`;
         const elements = await overpassQuery(query);
-        if (elements === null) break; // sin servidores: no tiene sentido seguir
+        if (elements === null) {
+            // Servidores caídos: probar con lo descargado
+            if (typeof searchPlacesOffline === 'function') {
+                const off = await searchPlacesOffline(lat, lng, categoria);
+                if (off) return off;
+            }
+            break;
+        }
         places = elements.map(el => toPlace(el, lat, lng)).filter(Boolean);
         if (places.length >= MIN_RESULTS) break;
     }
@@ -965,7 +979,9 @@ async function showIntentResponse(intent, userLat, userLng, targetLang) {
 
     // 2) Lugares fijos de referencia (se agregan si no están repetidos)
     (intent.lugares || []).forEach(l => {
-        const dup = lugares.some(x => Math.abs(x.lat - l.lat) < 0.0006 && Math.abs(x.lng - l.lng) < 0.0006);
+        const dup = lugares.some(x =>
+            (Math.abs(x.lat - l.lat) < 0.0006 && Math.abs(x.lng - l.lng) < 0.0006) ||
+            (normText(x.nombre) === normText(l.nombre) && distanciaMetros(x.lat, x.lng, l.lat, l.lng) < 1500));
         if (dup) return;
         lugares.push({
             ...l,
@@ -1087,6 +1103,7 @@ function setupSpeechRecognition() {
         btnHablar.classList.remove('listening');
         let msg = `Error: ${event.error}`;
         if (event.error === 'not-allowed') msg = 'Permiso de micrófono denegado.';
+        else if (event.error === 'network') msg = 'El dictado por voz necesita internet. Escribí el texto o usá las frases rápidas.';
         else if (event.error === 'no-speech') msg = 'No se detectó voz. Intentá de nuevo.';
         updateStatus(msg, true);
     };
