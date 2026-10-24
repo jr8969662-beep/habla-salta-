@@ -575,3 +575,4 @@ footer .aviso { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
 .offline-status.error { color: var(--rojo); }
 .offline-info { font-size: .85rem; margin: 0; opacity: .85; }
 .btn-offline + .offline-banner + .offline-panel ~ .container { padding-top: 8px; }
+.offline-pasos li[data-state="omitido"]::before { content: '–'; opacity: 1; }

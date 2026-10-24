@@ -95,8 +95,43 @@ async function fetchInBatches(urls, cache, onStep, concurrency = 6) {
     return { ok, fail };
 }
 
+// Prueba los servidores uno por uno (en paralelo se bloquean por exceso de pedidos)
+const OVERPASS_DESCARGA = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter'
+];
+async function overpassOneByOne(query) {
+    for (let intento = 0; intento < 2; intento++) {
+        for (const url of OVERPASS_DESCARGA) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 70000);
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'data=' + encodeURIComponent(query),
+                    signal: ctrl.signal
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data.elements)) return data.elements;
+                }
+                console.warn('Overpass', url, res.status);
+            } catch (e) {
+                console.warn('Overpass', url, e.message);
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+        await new Promise(r => setTimeout(r, 3000)); // esperar y reintentar
+    }
+    return null;
+}
+
 async function downloadPlaces() {
-    // Todas las categorías de la app en una sola consulta
+    // Se pide por partes chicas (una consulta gigante la rechazan los servidores)
     const seen = new Set();
     const parts = [];
     const [s, w, n, e] = PLACES_BBOX;
@@ -109,9 +144,21 @@ async function downloadPlaces() {
             parts.push(`nwr["${k}"~"^(${v})$"](${s},${w},${n},${e});`);
         });
     });
-    const query = `[out:json][timeout:90];(\n${parts.join('\n')}\n);out center tags;`;
-    const elements = await overpassQuery(query, 90000);
-    if (!elements) throw new Error('No respondió el servidor de lugares');
+    const GRUPO = 5;
+    const byId = new Map();
+    let fallidos = 0;
+    const total = Math.ceil(parts.length / GRUPO);
+    for (let i = 0; i < parts.length && downloading; i += GRUPO) {
+        const query = `[out:json][timeout:60];(\n${parts.slice(i, i + GRUPO).join('\n')}\n);out center tags;`;
+        setOfflineStatus(`Descargando lugares: parte ${i / GRUPO + 1} de ${total}…`);
+        setProgress((i / GRUPO) / total);
+        const els = await overpassOneByOne(query);
+        if (!els) { fallidos++; continue; }
+        els.forEach(el => byId.set(el.id != null ? `${el.type}/${el.id}` : `${el.lat ?? (el.center && el.center.lat)},${el.lon ?? (el.center && el.center.lon)}`, el));
+    }
+    if (byId.size === 0) throw new Error('No respondió el servidor de lugares');
+    if (fallidos) console.warn(`Faltaron ${fallidos} partes de lugares`);
+    const elements = [...byId.values()];
 
     // Guardar solo lo necesario para que ocupe poco
     const KEEP = ['name', 'brand', 'operator', 'amenity', 'healthcare', 'shop', 'tourism', 'vending',
@@ -189,7 +236,7 @@ async function startOfflineDownload() {
             setOfflineStatus(`Traduciendo respuestas al ${langName(lang).toLowerCase()}…`);
             nFrases = await downloadPhrases(lang);
         }
-        setStep('frases', lang ? 'ok' : 'error');
+        setStep('frases', lang ? 'ok' : 'omitido');
 
         const meta = getOfflineMeta() || { langs: [] };
         meta.fecha = Date.now();
@@ -198,7 +245,14 @@ async function startOfflineDownload() {
         if (lang && !meta.langs.includes(lang)) meta.langs.push(lang);
         setOfflineMeta(meta);
         setProgress(1);
-        setOfflineStatus(`✅ Listo. Ya podés usar la app sin internet.${lang ? '' : ' (Elegí un idioma y volvé a descargar para tener las respuestas traducidas.)'}`);
+        const faltan = [];
+        if (!nLugares) faltan.push('los lugares (el servidor no respondió, probá de nuevo en unos minutos)');
+        if (r.fail > urls.length * 0.1) faltan.push('parte del mapa');
+        let msg = faltan.length
+            ? `⚠️ Descarga incompleta: faltó ${faltan.join(' y ')}. Tocá "Descargar todo" otra vez; solo baja lo que falta.`
+            : '✅ Listo. Ya podés usar la app sin internet.';
+        if (!lang) msg += ' Para tener las respuestas traducidas, elegí arriba el idioma del visitante y descargá de nuevo.';
+        setOfflineStatus(msg, faltan.length > 0);
     } catch (e) {
         setOfflineStatus(e.message === 'cancelado' ? 'Descarga cancelada. Lo ya bajado queda guardado.' : 'Hubo un problema: ' + e.message, true);
     } finally {
@@ -251,7 +305,10 @@ async function renderOfflineInfo() {
         info.innerHTML = `Descargado el ${f}${espacio}<br>Lugares guardados: ${meta.lugares || 0} · Respuestas en: ${escapeHtml(langs)}`;
         ['app', 'mapa', 'lugares', 'frases'].forEach(s => {
             const li = document.querySelector(`[data-step="${s}"]`);
-            if (li && !li.dataset.state) li.dataset.state = 'ok';
+            if (!li || li.dataset.state) return;
+            if (s === 'lugares') li.dataset.state = meta.lugares ? 'ok' : 'error';
+            else if (s === 'frases') li.dataset.state = (meta.langs || []).length ? 'ok' : 'omitido';
+            else li.dataset.state = 'ok';
         });
     } else {
         info.textContent = `Todavía no descargaste nada.${espacio}`;
