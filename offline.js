@@ -136,7 +136,6 @@ async function downloadPlaces() {
 async function downloadPhrases(lang) {
     if (!lang || lang === 'es') return 0;
     const textos = [];
-    QUICK_PHRASES.forEach(g => g.items.forEach(f => { if (!f.includes('{n}')) textos.push(f); }));
     INTENTS.forEach(it => { if (!it['respuesta_' + lang]) textos.push(it.respuesta_es); });
     let n = 0;
     for (const t of textos) {
@@ -187,7 +186,7 @@ async function startOfflineDownload() {
         setStep('frases', 'cargando');
         let nFrases = 0;
         if (lang) {
-            setOfflineStatus(`Traduciendo frases al ${langName(lang).toLowerCase()}…`);
+            setOfflineStatus(`Traduciendo respuestas al ${langName(lang).toLowerCase()}…`);
             nFrases = await downloadPhrases(lang);
         }
         setStep('frases', lang ? 'ok' : 'error');
@@ -199,7 +198,7 @@ async function startOfflineDownload() {
         if (lang && !meta.langs.includes(lang)) meta.langs.push(lang);
         setOfflineMeta(meta);
         setProgress(1);
-        setOfflineStatus(`✅ Listo. Ya podés usar la app sin internet.${lang ? '' : ' (Elegí un idioma y volvé a descargar para tener sus frases.)'}`);
+        setOfflineStatus(`✅ Listo. Ya podés usar la app sin internet.${lang ? '' : ' (Elegí un idioma y volvé a descargar para tener las respuestas traducidas.)'}`);
     } catch (e) {
         setOfflineStatus(e.message === 'cancelado' ? 'Descarga cancelada. Lo ya bajado queda guardado.' : 'Hubo un problema: ' + e.message, true);
     } finally {
@@ -249,7 +248,7 @@ async function renderOfflineInfo() {
     if (meta) {
         const f = new Date(meta.fecha).toLocaleDateString('es-AR');
         const langs = (meta.langs || []).map(langName).join(', ') || 'ninguno';
-        info.innerHTML = `Descargado el ${f}${espacio}<br>Lugares guardados: ${meta.lugares || 0} · Frases en: ${escapeHtml(langs)}`;
+        info.innerHTML = `Descargado el ${f}${espacio}<br>Lugares guardados: ${meta.lugares || 0} · Respuestas en: ${escapeHtml(langs)}`;
         ['app', 'mapa', 'lugares', 'frases'].forEach(s => {
             const li = document.querySelector(`[data-step="${s}"]`);
             if (li && !li.dataset.state) li.dataset.state = 'ok';
@@ -266,7 +265,7 @@ function updateOnlineBanner() {
     const off = !navigator.onLine;
     banner.classList.toggle('hidden', !off);
     banner.textContent = getOfflineMeta()
-        ? '📴 Sin internet — usando mapa, lugares y frases descargadas.'
+        ? '📴 Sin internet — usando mapa, lugares y datos descargados.'
         : '📴 Sin internet. Descargá la app (botón ⬇️) para usarla sin conexión.';
 }
 

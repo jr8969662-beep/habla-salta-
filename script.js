@@ -621,7 +621,7 @@ async function translateFull(text, from, to) {
     const cached = translationCache.get(key);
     if (cached) return { ...cached, provider: 'cache' };
 
-    if (!navigator.onLine) throw new Error('Sin internet no se puede traducir texto nuevo. Usá las frases rápidas o el historial.');
+    if (!navigator.onLine) throw new Error('Sin internet no se puede traducir texto nuevo. Usá el historial o lo ya traducido.');
 
     const providers = [translateWithGoogle, translateWithMyMemory];
     let lastError;
@@ -1103,7 +1103,7 @@ function setupSpeechRecognition() {
         btnHablar.classList.remove('listening');
         let msg = `Error: ${event.error}`;
         if (event.error === 'not-allowed') msg = 'Permiso de micrófono denegado.';
-        else if (event.error === 'network') msg = 'El dictado por voz necesita internet. Escribí el texto o usá las frases rápidas.';
+        else if (event.error === 'network') msg = 'El dictado por voz necesita internet. Escribí el texto.';
         else if (event.error === 'no-speech') msg = 'No se detectó voz. Intentá de nuevo.';
         updateStatus(msg, true);
     };
@@ -1277,71 +1277,8 @@ btnCopiar.addEventListener('click', () => {
     idiomaSelect.addEventListener('change', () => {
         try { localStorage.setItem('hablaSaltaIdioma', idiomaSelect.value); } catch (e) {}
         if (idiomaSelect.value !== 'auto') lastVisitorLang = idiomaSelect.value;
-        renderQuickPhrases();
     });
 })();
-
-// ===== Frases rápidas (vos → visitante) =====
-const QUICK_PHRASES = [
-    { cat: '👋 Saludos', items: ['Hola, bienvenido a Salta', 'Gracias', 'Un momento, por favor', '¿En qué lo puedo ayudar?', 'No entiendo, ¿puede repetir?'] },
-    { cat: '💵 Pagos', items: ['¿Cuánto cuesta?', 'Son {n} pesos', 'Solo efectivo', 'Aceptamos tarjeta', 'Se puede pagar con transferencia o QR', 'No tengo cambio'] },
-    { cat: '🧭 Direcciones', items: ['Siga derecho', 'Doble a la derecha', 'Doble a la izquierda', 'Está a dos cuadras', 'Está cerca, puede ir caminando', 'Le conviene tomar un taxi'] },
-    { cat: '🚨 Ayuda', items: ['Llamaré a una ambulancia', 'La policía está en camino', '¿Necesita ayuda?', '¿Tiene su documento o pasaporte?', 'Quédese aquí, por favor'] },
-    { cat: '🍽️ Comercio', items: ['Está cerrado', 'Abrimos a las 9', 'El baño está al fondo', '¿Para comer aquí o para llevar?', 'La cuenta, ahora se la traigo'] }
-];
-
-function renderQuickPhrases() {
-    const box = document.getElementById('quick-phrases');
-    if (!box) return;
-    const target = idiomaSelect.value !== 'auto' ? idiomaSelect.value : lastVisitorLang;
-    const hint = document.getElementById('quick-hint');
-    hint.textContent = target
-        ? `Tocá una frase y se dice en ${langName(target).toLowerCase()}.`
-        : 'Elegí arriba el idioma del visitante para usarlas.';
-    if (box.dataset.ready) return;
-    box.dataset.ready = '1';
-    QUICK_PHRASES.forEach((group, gi) => {
-        const det = document.createElement('details');
-        if (gi === 0) det.open = true;
-        det.innerHTML = `<summary>${group.cat}</summary><div class="chips"></div>`;
-        const chips = det.querySelector('.chips');
-        group.items.forEach(frase => {
-            const b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'chip';
-            b.textContent = frase.replace('{n}', '…');
-            b.addEventListener('click', () => sayQuickPhrase(frase));
-            chips.appendChild(b);
-        });
-        box.appendChild(det);
-    });
-}
-
-async function sayQuickPhrase(frase) {
-    const target = idiomaSelect.value !== 'auto' ? idiomaSelect.value : lastVisitorLang;
-    if (!target) {
-        updateStatus('Primero elegí el idioma del visitante.', true);
-        idiomaSelect.focus();
-        return;
-    }
-    if (frase.includes('{n}')) {
-        const n = prompt('¿Cuántos pesos?');
-        if (!n) return;
-        frase = frase.replace('{n}', n.replace(/[^\d.,]/g, ''));
-    }
-    updateStatus('Traduciendo...');
-    try {
-        const r = await translateFull(frase, 'es', target);
-        intentResponse.classList.add('hidden');
-        mapContainer.classList.add('hidden');
-        showResult(r.text, target, `ESPAÑOL → ${langName(target).toUpperCase()}`, frase);
-        speak(r.text, speechCode(target));
-        updateStatus(`"${frase}"`);
-        resultadoDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } catch (e) {
-        updateStatus(e.message, true);
-    }
-}
 
 // ===== Pantalla grande para mostrarle al turista =====
 const overlay = document.getElementById('fullscreen');
@@ -1421,7 +1358,6 @@ document.getElementById('btn-limpiar').addEventListener('click', () => {
 // --- Inicialización ---
 document.addEventListener('DOMContentLoaded', () => {
     setupSpeechRecognition();
-    renderQuickPhrases();
     renderHistory();
     if (idiomaSelect.value !== 'auto') lastVisitorLang = idiomaSelect.value;
     updateStatus('Presioná "Hablar" para dictar.');
