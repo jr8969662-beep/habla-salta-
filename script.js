@@ -472,7 +472,14 @@ function updateStatus(message, isError = false) {
     statusText.style.color = isError ? '#b91c1c' : '#5a4632';
 }
 
+// Dentro de la app Android hay un puente nativo (voz y micrófono de Android)
+const ANDROID = window.HablaAndroid || null;
+
 function speak(text, langCode) {
+    if (ANDROID) {
+        ANDROID.speak(text, langCode || 'es-AR');
+        return;
+    }
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
@@ -1080,14 +1087,28 @@ function renderEmergencyBanner(intent) {
 // --- Reconocimiento de voz ---
 function setupSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    if (ANDROID) {
+        // Reconocimiento de voz nativo de Android, con la misma forma que el del navegador
+        recognition = {
+            lang: 'en-US',
+            start() { ANDROID.startListening(this.lang); },
+            stop() { ANDROID.stopListening(); }
+        };
+        window.__androidSpeech = {
+            onStart: () => recognition.onstart && recognition.onstart(),
+            onEnd: () => recognition.onend && recognition.onend(),
+            onError: err => recognition.onerror && recognition.onerror({ error: err }),
+            onResult: text => recognition.onresult && recognition.onresult({ results: [[{ transcript: text }]] })
+        };
+    } else if (!SpeechRecognition) {
         updateStatus('Tu navegador no soporta el reconocimiento de voz. Usá Chrome o Edge.', true);
         btnHablar.disabled = true;
         return;
+    } else {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
     }
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
 
     recognition.onstart = () => {
         isListening = true;

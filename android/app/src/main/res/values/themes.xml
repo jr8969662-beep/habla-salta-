@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.HablaSalta" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#0B3558</item>
+        <item name="android:navigationBarColor">#0B3558</item>
+        <item name="android:windowBackground">@color/fondo</item>
+    </style>
+    <color name="fondo">#7A3520</color>
+</resources>
