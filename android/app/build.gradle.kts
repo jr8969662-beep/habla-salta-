@@ -11,9 +11,20 @@ android {
         applicationId = "ar.hablasalta.app"
         minSdk = 24
         targetSdk = 35
-        // Subí estos dos números cada vez que generes un APK nuevo: se ven en la esquina de la app
-        versionCode = 2
-        versionName = "1.1"
+        // GitHub pone estos números solos en cada compilación (1.<número de compilación>).
+        // Si compilás a mano en Android Studio se usan los valores de la derecha.
+        versionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 2
+        versionName = (project.findProperty("appVersionName") as String?) ?: "1.1"
+    }
+
+    // Misma firma en todas las compilaciones, así cada APK nuevo se instala encima del anterior
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {

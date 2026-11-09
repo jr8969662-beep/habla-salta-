@@ -13,8 +13,10 @@ Para publicarlo o compartirlo "en serio": *Build > Generate Signed App Bundle / 
 
 ## Número de versión
 
-En la esquina inferior derecha de la app se ve la versión instalada, por ejemplo `v1.1 (2)`.
-Se cambia en `app/build.gradle.kts`: `versionName` (lo que se muestra, ej. "1.2") y `versionCode` (un número entero que siempre tiene que subir: 3, 4, 5…).
+En la esquina inferior derecha de la app se ve la versión instalada, por ejemplo `v1.12 (12)`.
+Sube sola: GitHub compila el APK en cada cambio y le pone `1.<número de compilación>`.
+La última versión está siempre en la pestaña **Releases** del repositorio (`HablaSalta.apk`).
+Si compilás a mano en Android Studio se usa el valor por defecto de `app/build.gradle.kts`.
 En el navegador (sin la app) se muestra `web`.
 
 ## Actualizar la app
