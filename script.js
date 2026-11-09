@@ -479,9 +479,8 @@ const ANDROID = window.HablaAndroid || null;
 (function showVersion() {
     const tag = document.getElementById('version-tag');
     if (!tag) return;
-    let v = 'web';
-    try { if (ANDROID && typeof ANDROID.appVersion === 'function') v = 'v' + ANDROID.appVersion(); } catch (e) {}
-    tag.textContent = v;
+    // version.js lo escribe GitHub solo en cada cambio (ej. "1.57")
+    tag.textContent = window.APP_VERSION ? 'v' + window.APP_VERSION : 'v?';
 })();
 
 // ----- Traductor y detector sin internet (solo dentro de la app Android) -----

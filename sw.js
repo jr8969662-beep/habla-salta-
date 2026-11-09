@@ -6,7 +6,7 @@ const DATA_CACHE = 'hs-data';
 
 const APP_FILES = [
     './', './index.html', './styles.css', './script.js', './offline.js',
-    './manifest.json', './salta-fondo.jpg', './icon-192.png', './icon-512.png',
+    './manifest.json', './version.js', './salta-fondo.jpg', './icon-192.png', './icon-512.png',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',

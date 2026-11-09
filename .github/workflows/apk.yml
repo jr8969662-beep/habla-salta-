@@ -1,4 +1,4 @@
-name: Compilar APK
+name: Versión y APK
 
 on:
   push:
@@ -7,12 +7,26 @@ on:
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   apk:
+    # Los commits que hace este mismo proceso no lo vuelven a disparar
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calcular número de versión
+        id: ver
+        run: |
+          # Cantidad de cambios hechos a mano (sin contar los de este proceso)
+          N=$(git rev-list --count HEAD --invert-grep --grep='\[skip ci\]')
+          echo "n=$N" >> "$GITHUB_OUTPUT"
+          echo "window.APP_VERSION = \"1.$N\";" > version.js
+          cat version.js
 
       - uses: actions/setup-java@v4
         with:
@@ -23,24 +37,30 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Compilar
+      - name: Compilar APK
         working-directory: android
-        run: gradle assembleDebug --no-daemon --stacktrace -PappVersionCode=${{ github.run_number }} -PappVersionName=1.${{ github.run_number }}
+        run: gradle assembleDebug --no-daemon --stacktrace -PappVersionCode=${{ steps.ver.outputs.n }} -PappVersionName=1.${{ steps.ver.outputs.n }}
 
       - name: Renombrar
         run: cp android/app/build/outputs/apk/debug/app-debug.apk HablaSalta.apk
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: HablaSalta-apk
-          path: HablaSalta.apk
+      - name: Guardar el número en la web
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Versión 1.${{ steps.ver.outputs.n }} [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
 
-      - name: Publicar descarga
+      - name: Publicar descarga del APK
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release delete apk --yes --cleanup-tag || true
           gh release create apk HablaSalta.apk \
-            --title "Hablá Salta v1.${{ github.run_number }}" \
-            --notes "Versión **1.${{ github.run_number }}**. Descargá HablaSalta.apk desde el teléfono e instalalo encima de la anterior. La misma versión se ve en la esquina inferior derecha de la app. Cambio: ${GITHUB_SHA::7}." \
+            --title "Hablá Salta v1.${{ steps.ver.outputs.n }}" \
+            --notes "Versión **1.${{ steps.ver.outputs.n }}**. Es el mismo número que se ve en la esquina inferior derecha de la web y de la app." \
             --latest
