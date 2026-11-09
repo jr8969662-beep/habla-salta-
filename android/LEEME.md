@@ -13,7 +13,7 @@ Para publicarlo o compartirlo "en serio": *Build > Generate Signed App Bundle / 
 
 ## Número de versión
 
-En la esquina inferior derecha de la web y de la app se ve la versión, por ejemplo `v1.57`.
+En la esquina inferior derecha de la web y de la app se ve la versión, por ejemplo `v57`.
 Sube sola: cada vez que se sube un cambio a GitHub, un proceso cuenta los cambios y escribe el número en `version.js`. No hay que tocar nada.
 La última versión del APK está siempre en la pestaña **Releases** del repositorio (`HablaSalta.apk`).
 
