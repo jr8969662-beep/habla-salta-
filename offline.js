@@ -192,6 +192,7 @@ async function startOfflineDownload() {
     if (downloading) { downloading = false; return; }
     if (!navigator.onLine) { setOfflineStatus('Necesitás internet para descargar. Probá con Wi-Fi.', true); return; }
     downloading = true;
+    const downloadErrors = [];
     const btn = document.getElementById('btn-descargar-todo');
     btn.textContent = '⏸ Cancelar';
     const lang = idiomaSelect.value !== 'auto' ? idiomaSelect.value : lastVisitorLang;
@@ -230,6 +231,30 @@ async function startOfflineDownload() {
         } else try { nLugares = await downloadPlaces(); lugaresNuevos = true; setStep('lugares', 'ok'); }
         catch (e) { console.warn(e); setStep('lugares', 'error'); }
 
+        // Traductor sin internet (solo en la app Android)
+        let langsNativos = null;
+        if (NATIVE_OFFLINE) {
+            const prev = (getOfflineMeta() || {}).traductor || [];
+            if (!lang) {
+                setStep('traductor', 'omitido');
+            } else if (['qu', 'ay', 'gn'].includes(lang)) {
+                setStep('traductor', 'omitido');
+                setOfflineStatus(`${langName(lang)} no tiene traductor sin internet; las demás partes sí se guardan.`);
+            } else {
+                setStep('traductor', 'cargando');
+                setOfflineStatus(`Descargando el traductor ${langName(lang).toLowerCase()} ↔ español (unos 30 MB por idioma)…`);
+                try {
+                    await nativeCall('downloadModels', [`es,en,${lang}`], 15 * 60 * 1000);
+                    langsNativos = [...new Set([...prev, lang])];
+                    setStep('traductor', 'ok');
+                } catch (e) {
+                    console.warn('Traductor offline:', e);
+                    setStep('traductor', 'error');
+                    if (!downloadErrors.includes('el traductor sin internet')) downloadErrors.push('el traductor sin internet');
+                }
+            }
+        }
+
         setStep('frases', 'cargando');
         let nFrases = 0;
         if (lang) {
@@ -239,6 +264,7 @@ async function startOfflineDownload() {
         setStep('frases', lang ? 'ok' : 'omitido');
 
         const meta = getOfflineMeta() || { langs: [] };
+        if (langsNativos) meta.traductor = langsNativos;
         meta.fecha = Date.now();
         meta.tiles = r.ok;
         meta.lugares = nLugares || meta.lugares || 0;
@@ -246,7 +272,7 @@ async function startOfflineDownload() {
         if (lang && !meta.langs.includes(lang)) meta.langs.push(lang);
         setOfflineMeta(meta);
         setProgress(1);
-        const faltan = [];
+        const faltan = [...downloadErrors];
         if (!nLugares) faltan.push('los lugares (el servidor no respondió, probá de nuevo en unos minutos)');
         if (r.fail > urls.length * 0.1) faltan.push('parte del mapa');
         let msg = faltan.length
@@ -264,10 +290,14 @@ async function startOfflineDownload() {
 }
 
 async function deleteOfflineData() {
+    if (NATIVE_OFFLINE) {
+        const langs = ((getOfflineMeta() || {}).traductor || []).join(',');
+        if (langs) { try { await nativeCall('deleteModels', [langs], 60000); } catch (e) {} }
+    }
     await Promise.all(['hs-tiles', 'hs-data'].map(k => caches.delete(k)));
     try { localStorage.removeItem(OFFLINE_META_KEY); } catch (e) {}
     offlinePlacesData = null;
-    ['app', 'mapa', 'lugares', 'frases'].forEach(s => setStep(s, ''));
+    ['app', 'mapa', 'lugares', 'traductor', 'frases'].forEach(s => setStep(s, ''));
     setProgress(0);
     setOfflineStatus('Se borró la descarga.');
     renderOfflineInfo();
@@ -303,11 +333,13 @@ async function renderOfflineInfo() {
     if (meta) {
         const f = new Date(meta.fecha).toLocaleDateString('es-AR');
         const langs = (meta.langs || []).map(langName).join(', ') || 'ninguno';
-        info.innerHTML = `Descargado el ${f}${espacio}<br>Lugares guardados: ${meta.lugares || 0} · Respuestas en: ${escapeHtml(langs)}`;
-        ['app', 'mapa', 'lugares', 'frases'].forEach(s => {
+        const nativos = (meta.traductor || []).map(langName).join(', ');
+        info.innerHTML = `Descargado el ${f}${espacio}<br>Lugares guardados: ${meta.lugares || 0} · Respuestas en: ${escapeHtml(langs)}${NATIVE_OFFLINE ? `<br>Traductor sin internet: ${escapeHtml(nativos || 'ninguno')}` : ''}`;
+        ['app', 'mapa', 'lugares', 'traductor', 'frases'].forEach(s => {
             const li = document.querySelector(`[data-step="${s}"]`);
             if (!li || li.dataset.state) return;
             if (s === 'lugares') li.dataset.state = meta.lugares ? 'ok' : 'error';
+            else if (s === 'traductor') li.dataset.state = (meta.traductor || []).length ? 'ok' : 'omitido';
             else if (s === 'frases') li.dataset.state = (meta.langs || []).length ? 'ok' : 'omitido';
             else li.dataset.state = 'ok';
         });
@@ -340,6 +372,10 @@ async function registerSW() {
 }
 
 (function setupOffline() {
+    // El paso del traductor solo existe dentro de la app Android
+    const pasoTraductor = document.getElementById('paso-traductor');
+    if (pasoTraductor && NATIVE_OFFLINE) pasoTraductor.hidden = false;
+
     const panel = document.getElementById('offline-panel');
     document.getElementById('btn-offline').addEventListener('click', () => {
         panel.classList.remove('hidden');

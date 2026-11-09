@@ -475,6 +475,54 @@ function updateStatus(message, isError = false) {
 // Dentro de la app Android hay un puente nativo (voz y micrófono de Android)
 const ANDROID = window.HablaAndroid || null;
 
+// ----- Traductor y detector sin internet (solo dentro de la app Android) -----
+const NATIVE_OFFLINE = !!(ANDROID && typeof ANDROID.translateOffline === 'function');
+const nativeCalls = {};
+let nativeSeq = 0;
+
+window.__androidNative = {
+    resolve(id, ok, payload) {
+        const c = nativeCalls[id];
+        if (!c) return;
+        delete nativeCalls[id];
+        clearTimeout(c.timer);
+        ok ? c.resolve(payload) : c.reject(new Error(payload));
+    }
+};
+
+function nativeCall(fn, args, timeoutMs = 30000) {
+    return new Promise((resolve, reject) => {
+        const id = 'n' + (++nativeSeq);
+        const timer = setTimeout(() => {
+            delete nativeCalls[id];
+            reject(new Error('timeout'));
+        }, timeoutMs);
+        nativeCalls[id] = { resolve, reject, timer };
+        try { ANDROID[fn](id, ...args); }
+        catch (e) { delete nativeCalls[id]; clearTimeout(timer); reject(e); }
+    });
+}
+
+function nativeErrorMessage(e) {
+    const m = String((e && e.message) || e);
+    if (m.startsWith('unsupported')) return 'Este idioma no se puede traducir sin internet (quechua, aimara y guaraní necesitan conexión).';
+    if (m === 'model-missing') return 'Para traducir sin internet, descargá el idioma con el botón ⬇️ cuando tengas conexión.';
+    if (m === 'timeout') return 'El traductor tardó demasiado. Probá de nuevo.';
+    return 'No se pudo traducir sin internet.';
+}
+
+// Proveedor sin internet: ML Kit (dentro del teléfono)
+async function translateWithNative(text, from, to) {
+    let src = from;
+    if (src === 'auto') {
+        src = normalizeLang(await nativeCall('detectLanguage', [text]));
+        if (!src || src === 'und') throw new Error('No se pudo detectar el idioma. Elegilo en la lista.');
+    }
+    if (src === to) return { text, detected: src, provider: 'android' };
+    const out = await nativeCall('translateOffline', [text, src, to]);
+    return { text: out, detected: src, provider: 'android' };
+}
+
 function speak(text, langCode) {
     if (ANDROID) {
         ANDROID.speak(text, langCode || 'es-AR');
@@ -628,9 +676,20 @@ async function translateFull(text, from, to) {
     const cached = translationCache.get(key);
     if (cached) return { ...cached, provider: 'cache' };
 
-    if (!navigator.onLine) throw new Error('Sin internet no se puede traducir texto nuevo. Usá el historial o lo ya traducido.');
-
     const providers = [translateWithGoogle, translateWithMyMemory];
+
+    if (!navigator.onLine) {
+        if (!NATIVE_OFFLINE) throw new Error('Sin internet no se puede traducir texto nuevo. Usá el historial o lo ya traducido.');
+        try {
+            const result = await translateWithNative(text, from, to);
+            translationCache.set(key, { text: result.text, detected: result.detected });
+            return result;
+        } catch (e) {
+            throw new Error(nativeErrorMessage(e));
+        }
+    }
+    // Con conexión floja: si Google y MyMemory fallan, probar con el traductor del teléfono
+    if (NATIVE_OFFLINE) providers.push(translateWithNative);
     let lastError;
     for (const provider of providers) {
         try {
@@ -643,6 +702,9 @@ async function translateFull(text, from, to) {
             console.warn(`Falló ${provider.name}:`, e);
             lastError = e;
         }
+    }
+    if (NATIVE_OFFLINE && lastError && /unsupported|model-missing/.test(lastError.message)) {
+        throw new Error(nativeErrorMessage(lastError));
     }
     throw new Error(lastError && lastError.name === 'AbortError'
         ? 'El servicio de traducción tardó demasiado. Probá de nuevo.'
@@ -1125,6 +1187,8 @@ function setupSpeechRecognition() {
         let msg = `Error: ${event.error}`;
         if (event.error === 'not-allowed') msg = 'Permiso de micrófono denegado.';
         else if (event.error === 'network') msg = 'El dictado por voz necesita internet. Escribí el texto.';
+        else if (event.error === 'language-unavailable') msg = 'Para dictar sin internet falta bajar el idioma en el teléfono: Ajustes de la app Google > Voz > Reconocimiento de voz sin conexión. Mientras tanto, escribí el texto.';
+        else if (event.error === 'not-supported') msg = 'Este teléfono no tiene reconocimiento de voz.';
         else if (event.error === 'no-speech') msg = 'No se detectó voz. Intentá de nuevo.';
         updateStatus(msg, true);
     };

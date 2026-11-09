@@ -31,6 +31,9 @@ android {
 
 dependencies {
     implementation("androidx.webkit:webkit:1.12.1")
+    // Traducción y detección de idioma sin internet (se descarga un paquete por idioma)
+    implementation("com.google.mlkit:translate:17.0.3")
+    implementation("com.google.mlkit:language-id:17.0.6")
 }
 
 // Copia la web (index.html, script.js, styles.css, etc.) de la carpeta de arriba

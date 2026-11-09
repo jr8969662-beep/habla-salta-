@@ -6,6 +6,9 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -44,6 +47,8 @@ class MainActivity : Activity() {
 
     private lateinit var webView: WebView
     private lateinit var assetLoader: WebViewAssetLoader
+
+    private val offlineTranslator = OfflineTranslator()
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var pendingListenLang: String? = null
@@ -157,6 +162,51 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun stopSpeaking() = runOnUiThread { tts?.stop() }
+
+        // ----- Traductor sin internet (cada llamada responde con resolve(id, ok, texto)) -----
+        @JavascriptInterface
+        fun translateOffline(id: String, text: String, from: String, to: String) {
+            offlineTranslator.translate(text, from, to,
+                { nativeResult(id, true, it) }, { nativeResult(id, false, it) })
+        }
+
+        @JavascriptInterface
+        fun detectLanguage(id: String, text: String) {
+            offlineTranslator.detect(text) { nativeResult(id, true, it) }
+        }
+
+        @JavascriptInterface
+        fun downloadModels(id: String, langsCsv: String) {
+            offlineTranslator.download(csv(langsCsv),
+                { nativeResult(id, true, it) }, { nativeResult(id, false, it) })
+        }
+
+        @JavascriptInterface
+        fun modelsDownloaded(id: String, langsCsv: String) {
+            offlineTranslator.downloaded(csv(langsCsv)) { nativeResult(id, true, it) }
+        }
+
+        @JavascriptInterface
+        fun deleteModels(id: String, langsCsv: String) {
+            offlineTranslator.delete(csv(langsCsv)) { nativeResult(id, true, "") }
+        }
+    }
+
+    private fun csv(s: String) = s.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
+    // Responde a window.__androidNative.resolve(id, ok, payload) en la web
+    private fun nativeResult(id: String, ok: Boolean, payload: String) {
+        webView.post {
+            webView.evaluateJavascript(
+                "window.__androidNative && window.__androidNative.resolve(" +
+                    "${JSONObject.quote(id)}, $ok, ${JSONObject.quote(payload)})", null)
+        }
+    }
+
+    private fun isOnline(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     // ---------- Voz a texto ----------
@@ -166,14 +216,19 @@ class MainActivity : Activity() {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_MIC)
             return
         }
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+        val online = isOnline()
+        // Sin internet: usar el reconocedor que viene dentro del teléfono (Android 13+) si existe
+        val useOnDevice = !online && Build.VERSION.SDK_INT >= 33 &&
+            SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
+        if (!useOnDevice && !SpeechRecognizer.isRecognitionAvailable(this)) {
             Toast.makeText(this, "Este teléfono no tiene reconocimiento de voz (instalá la app de Google).",
                 Toast.LENGTH_LONG).show()
             js("onError", "not-supported")
             return
         }
         speechRecognizer?.destroy()
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+        speechRecognizer = (if (useOnDevice) SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+                            else SpeechRecognizer.createSpeechRecognizer(this)).apply {
             setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) = js("onStart")
                 override fun onResults(results: Bundle?) {
@@ -191,6 +246,8 @@ class MainActivity : Activity() {
                         SpeechRecognizer.ERROR_NETWORK,
                         SpeechRecognizer.ERROR_NETWORK_TIMEOUT,
                         SpeechRecognizer.ERROR_SERVER -> "network"
+                        // 12 y 13: el idioma no está descargado para usar sin internet
+                        12, 13 -> "language-unavailable"
                         else -> "error-$error"
                     }
                     js("onError", code)
@@ -209,6 +266,8 @@ class MainActivity : Activity() {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, lang)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            // Si no hay internet, que use el idioma guardado en el teléfono
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, !online)
         }
         speechRecognizer?.startListening(intent)
     }
@@ -278,6 +337,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         speechRecognizer?.destroy()
+        offlineTranslator.close()
         tts?.shutdown()
         webView.destroy()
         super.onDestroy()
