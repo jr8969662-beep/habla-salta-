@@ -160,6 +160,15 @@ class MainActivity : Activity() {
             if (ttsReady) speakNow(text, lang ?: "es-AR") else pendingSpeak = text to (lang ?: "es-AR")
         }
 
+        // Versión instalada, por ejemplo "1.1 (2)"
+        @JavascriptInterface
+        fun appVersion(): String = try {
+            val info = packageManager.getPackageInfo(packageName, 0)
+            val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode.toString()
+                       else @Suppress("DEPRECATION") info.versionCode.toString()
+            "${info.versionName} ($code)"
+        } catch (e: Exception) { "?" }
+
         @JavascriptInterface
         fun stopSpeaking() = runOnUiThread { tts?.stop() }
 

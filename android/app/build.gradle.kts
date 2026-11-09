@@ -11,8 +11,9 @@ android {
         applicationId = "ar.hablasalta.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // Subí estos dos números cada vez que generes un APK nuevo: se ven en la esquina de la app
+        versionCode = 2
+        versionName = "1.1"
     }
 
     buildTypes {

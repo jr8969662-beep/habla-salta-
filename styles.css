@@ -576,3 +576,12 @@ footer .aviso { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
 .offline-info { font-size: .85rem; margin: 0; opacity: .85; }
 .btn-offline + .offline-banner + .offline-panel ~ .container { padding-top: 8px; }
 .offline-pasos li[data-state="omitido"]::before { content: '–'; opacity: 1; }
+
+/* --- Número de versión --- */
+.version-tag {
+    position: fixed; right: 8px; bottom: calc(6px + env(safe-area-inset-bottom));
+    z-index: 800; pointer-events: none;
+    font-size: 0.7rem; font-weight: 600; letter-spacing: .3px;
+    padding: 2px 8px; border-radius: 999px;
+    background: rgba(0, 0, 0, .45); color: #fff;
+}

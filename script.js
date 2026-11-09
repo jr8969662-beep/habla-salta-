@@ -475,6 +475,15 @@ function updateStatus(message, isError = false) {
 // Dentro de la app Android hay un puente nativo (voz y micrófono de Android)
 const ANDROID = window.HablaAndroid || null;
 
+// ----- Número de versión en la esquina -----
+(function showVersion() {
+    const tag = document.getElementById('version-tag');
+    if (!tag) return;
+    let v = 'web';
+    try { if (ANDROID && typeof ANDROID.appVersion === 'function') v = 'v' + ANDROID.appVersion(); } catch (e) {}
+    tag.textContent = v;
+})();
+
 // ----- Traductor y detector sin internet (solo dentro de la app Android) -----
 const NATIVE_OFFLINE = !!(ANDROID && typeof ANDROID.translateOffline === 'function');
 const nativeCalls = {};

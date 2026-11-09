@@ -11,6 +11,12 @@ App Android que lleva la web de Hablá Salta adentro, de modo que abre sin inter
 
 Para publicarlo o compartirlo "en serio": *Build > Generate Signed App Bundle / APK* → APK → crear una clave nueva (¡guardala, sin ella no se puede actualizar la app!).
 
+## Número de versión
+
+En la esquina inferior derecha de la app se ve la versión instalada, por ejemplo `v1.1 (2)`.
+Se cambia en `app/build.gradle.kts`: `versionName` (lo que se muestra, ej. "1.2") y `versionCode` (un número entero que siempre tiene que subir: 3, 4, 5…).
+En el navegador (sin la app) se muestra `web`.
+
 ## Actualizar la app
 
 La web se copia sola dentro de la app en cada compilación. Si cambiás `index.html`, `script.js` o `styles.css`, volvé a generar el APK y subí `versionCode` en `app/build.gradle.kts`.
