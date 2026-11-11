@@ -1235,14 +1235,23 @@ async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {
                 ${l.fuente === 'fijo' ? '<span class="badge-fijo">⭐ Recomendado</span>' : ''}
                 <small>${escapeHtml(l.direccion)}</small>
                 ${l.distancia != null ? `<small class="lugar-dist">${formatDistancia(l.distancia)}</small>` : ''}
-                ${l.horario ? `<small class="lugar-horario">🕒 ${escapeHtml(l.horario === '24/7' ? 'Abierto 24 hs' : l.horario)}</small>` : ''}
+                ${window.HSExtras ? HSExtras.hoursBlockHtml(l.horario) : ''}
                 <div class="lugar-acciones">
                     ${TOURIST_VALUES.has(value) ? '<button type="button" class="btn-mini btn-historia">📖 Historia</button>' : ''}
+                    <button type="button" class="btn-mini btn-qr">📱 Mostrar QR</button>
                     <a class="btn-mini" href="${linkComoLlegar(l)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>
                     ${tel ? `<a class="btn-mini" href="tel:${tel.replace(/[^\d+]/g, '')}">📞 Llamar</a>` : ''}
                 </div>
                 <div class="lugar-historia hidden"></div>
             </div>`;
+        const btnQR = li.querySelector('.btn-qr');
+        if (btnQR) btnQR.addEventListener('click', () => HSExtras.showPlaceQR(l, targetLang));
+        const btnSem = li.querySelector('.btn-semana');
+        if (btnSem) btnSem.addEventListener('click', () => {
+            const sem = li.querySelector('.semana');
+            const abierta = !sem.classList.toggle('hidden');
+            btnSem.textContent = abierta ? 'Ocultar días y horarios ▴' : 'Ver días y horarios ▾';
+        });
         const btnH = li.querySelector('.btn-historia');
         if (btnH) {
             const box = li.querySelector('.lugar-historia');

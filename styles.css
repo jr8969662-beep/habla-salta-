@@ -601,3 +601,58 @@ footer .aviso { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
 .hist-target { font-weight: 600; border-top: 1px dashed var(--borde); padding-top: 8px; }
 .hist-estado { opacity: .8; }
 .hist-fuente { font-size: .8rem; color: var(--azul-claro); }
+
+
+/* --- Horarios de los lugares --- */
+.lugar-horario-box { margin-top: 4px; }
+.lugar-horario.sin-dato { opacity: .65; }
+.estado-horario {
+    display: inline-block; font-size: .85rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 999px;
+}
+.estado-horario.abierto { background: #dcfce7; color: #166534; }
+.estado-horario.cerrado { background: #fee2e2; color: #991b1b; }
+[data-theme="dark"] .estado-horario.abierto { background: #14532d; color: #bbf7d0; }
+[data-theme="dark"] .estado-horario.cerrado { background: #7f1d1d; color: #fecaca; }
+.btn-semana {
+    display: block; margin-top: 4px; padding: 2px 0; background: none; border: none;
+    color: var(--azul-claro); font-size: .85rem; font-weight: 600; cursor: pointer; text-align: left;
+}
+.semana { margin-top: 4px; font-size: .85rem; max-width: 320px; }
+.semana.hidden { display: none; }
+.sem-fila { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px solid var(--borde); }
+.sem-dias { font-weight: 600; text-transform: capitalize; }
+.sem-cerrado .sem-horas { color: #b91c1c; font-weight: 600; }
+
+/* --- Pantalla con QR para el turista --- */
+.qr-panel {
+    position: fixed; inset: 0; z-index: 10000; background: rgba(11,53,88,.92);
+    display: flex; align-items: center; justify-content: center;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.qr-panel.hidden { display: none; }
+.qr-box {
+    position: relative; width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto;
+    background: #fff; color: #0b3558; border-radius: 18px; padding: 20px 18px 16px; text-align: center;
+}
+.qr-cerrar {
+    position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 50%;
+    border: none; background: #e8eff6; color: #0b3558; font-size: 1.1rem; cursor: pointer;
+}
+.qr-nombre { font-size: 1.5rem; line-height: 1.2; margin: 0 40px 4px; overflow-wrap: anywhere; }
+.qr-dir, .qr-dist { margin: 2px 0; font-size: 1rem; }
+.qr-estado { margin: 8px 0; font-weight: 700; font-size: 1.05rem; padding: 6px 10px; border-radius: 10px; }
+.qr-estado.abierto { background: #dcfce7; color: #166534; }
+.qr-estado.cerrado { background: #fee2e2; color: #991b1b; }
+.qr-code { width: min(72vw, 300px); margin: 10px auto 6px; }
+.qr-code svg { width: 100%; height: auto; display: block; }
+.qr-texto { font-size: 1.05rem; font-weight: 700; margin: 6px 0 2px; }
+.qr-texto-es { font-size: .8rem; opacity: .7; margin: 0 0 6px; }
+.qr-semana { text-align: left; margin: 8px 0; font-size: .95rem; }
+.qr-semana summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
+.qr-semana .sem-fila { border-bottom-color: #d6e2ee; }
+.qr-botones { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+.qr-btn {
+    background: #0b3558; color: #fff; border: none; border-radius: 10px; padding: 10px 14px;
+    font-size: .95rem; font-weight: 600; text-decoration: none; cursor: pointer;
+}
