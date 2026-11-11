@@ -20,3 +20,13 @@ La última versión del APK está siempre en la pestaña **Releases** del reposi
 ## Actualizar la app
 
 La web se copia sola dentro de la app en cada compilación. Si cambiás `index.html`, `script.js` o `styles.css`, volvé a generar el APK y subí `versionCode` en `app/build.gradle.kts`.
+
+## Versión final (release) firmada
+
+1. Android Studio → **Build → Generate Signed App Bundle / APK…** → **APK** → Next.
+2. **Key store path → Choose existing…** y elegí tu archivo `habla-salta-release.jks` (la clave NO está en GitHub, se guarda aparte y bien resguardada).
+3. Pasá la contraseña (la misma en las dos casillas) y el alias `habla-salta` → Next.
+4. Elegí la variante **release**, tildá **V1** y **V2** → **Create**.
+5. El APK queda en `android/app/release/app-release.apk`.
+
+**Cuidá el archivo `.jks` y su contraseña**: sin ellos no se puede actualizar la app instalada.

@@ -9,3 +9,5 @@ captures/
 *.keystore
 !app/debug.keystore
 *.jks
+app/release/
+keystore.properties

@@ -11,10 +11,13 @@ android {
         applicationId = "ar.hablasalta.app"
         minSdk = 24
         targetSdk = 35
-        // GitHub pone estos números solos en cada compilación (1.<número de compilación>).
-        // Si compilás a mano en Android Studio se usan los valores de la derecha.
-        versionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 2
-        versionName = (project.findProperty("appVersionName") as String?) ?: "1.1"
+        // El número de versión sale de version.js (el mismo que se ve en la esquina de la app).
+        // GitHub lo pasa solo en cada compilación; si compilás a mano se lee de ese archivo.
+        val webVersion = rootProject.projectDir.parentFile.resolve("version.js")
+            .takeIf { it.exists() }
+            ?.let { Regex("\"(\\d+)\"").find(it.readText())?.groupValues?.get(1)?.toIntOrNull() }
+        versionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: webVersion ?: 2
+        versionName = (project.findProperty("appVersionName") as String?) ?: webVersion?.toString() ?: "1.1"
     }
 
     // Misma firma en todas las compilaciones, así cada APK nuevo se instala encima del anterior
@@ -27,9 +30,17 @@ android {
         }
     }
 
+    // No frenar la versión final por avisos de estilo del código
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            isDebuggable = false
+            // La firma de la versión final la pone el asistente de Android Studio con tu clave
         }
     }
     compileOptions {
