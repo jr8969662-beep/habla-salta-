@@ -67,8 +67,15 @@
             <div class="form-group">
                 <label for="idioma">Idioma que habla la otra persona</label>
                 <select id="idioma"></select>
-                <p id="nota-idioma" class="nota">La traducción se muestra en español.</p>
-                <button id="btn-direccion" class="btn-direccion" type="button" aria-pressed="false">⇄ Visitante → Español</button>
+                <div class="quien" role="group" aria-label="¿Quién habla?">
+                    <button id="modo-turista" class="quien-btn activo" type="button" aria-pressed="true">
+                        <span class="quien-icono">🧳</span><span>Habla el turista</span>
+                    </button>
+                    <button id="modo-yo" class="quien-btn" type="button" aria-pressed="false">
+                        <span class="quien-icono">🙋</span><span>Hablo yo</span>
+                    </button>
+                </div>
+                <p id="nota-idioma" class="nota">Se traduce al español.</p>
             </div>
 
             <div class="form-group">

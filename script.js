@@ -456,7 +456,8 @@ const intentResponse = document.getElementById('intent-response');
 const mapContainer = document.getElementById('map-container');
 const placesList = document.getElementById('places-list');
 const mapTitle = document.getElementById('map-title');
-const btnDireccion = document.getElementById('btn-direccion');
+const btnModoTurista = document.getElementById('modo-turista');
+const btnModoYo = document.getElementById('modo-yo');
 const labelTexto = document.getElementById('label-texto');
 const notaIdioma = document.getElementById('nota-idioma');
 const resultLabel = document.getElementById('resultado-label');
@@ -1293,14 +1294,17 @@ function showResult(text, lang, label, original) {
 // --- Dirección de traducción ---
 function updateDirectionUI() {
     const toEs = direction === 'toEs';
-    btnDireccion.textContent = toEs ? '⇄ Visitante → Español' : '⇄ Español → Visitante';
-    btnDireccion.classList.toggle('activo', !toEs);
-    btnDireccion.setAttribute('aria-pressed', String(!toEs));
-    labelTexto.textContent = toEs ? '¿Qué quiere decir?' : '¿Qué le querés responder?';
-    textoEntrada.placeholder = toEs ? 'Escribí o dictá la frase...' : 'Escribí o dictá tu respuesta en español...';
+    btnModoTurista.classList.toggle('activo', toEs);
+    btnModoYo.classList.toggle('activo', !toEs);
+    btnModoTurista.setAttribute('aria-pressed', String(toEs));
+    btnModoYo.setAttribute('aria-pressed', String(!toEs));
+    labelTexto.textContent = toEs ? 'Lo que dice el turista' : 'Lo que querés decirle';
+    textoEntrada.placeholder = toEs
+        ? 'Escribí o dictá lo que dice el turista...'
+        : 'Escribí o dictá en español...';
     notaIdioma.textContent = toEs
-        ? 'La traducción se muestra en español.'
-        : 'Tu respuesta se traduce al idioma del visitante.';
+        ? 'Se traduce al español.'
+        : 'Se traduce al idioma del turista y se lee en voz alta.';
 }
 
 // --- Event Listeners ---
@@ -1326,15 +1330,19 @@ textoEntrada.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleTranslate();
 });
 
-btnDireccion.addEventListener('click', () => {
-    direction = direction === 'toEs' ? 'fromEs' : 'toEs';
+function setDirection(dir) {
+    if (direction === dir) return;
+    direction = dir;
     textoEntrada.value = '';
     resultadoDiv.classList.add('hidden');
     intentResponse.classList.add('hidden');
     mapContainer.classList.add('hidden');
     updateDirectionUI();
     textoEntrada.focus();
-});
+}
+btnModoTurista.addEventListener('click', () => setDirection('toEs'));
+btnModoYo.addEventListener('click', () => setDirection('fromEs'));
+updateDirectionUI();
 
 btnEscuchar.addEventListener('click', () => {
     const texto = translationResult.textContent;
