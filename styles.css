@@ -346,7 +346,7 @@ select:focus, textarea:focus {
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 200px;
+    max-height: 62vh;
     overflow-y: auto;
 }
 
@@ -588,3 +588,16 @@ footer .aviso { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
     padding: 2px 8px; border-radius: 999px;
     background: rgba(0, 0, 0, .45); color: #fff;
 }
+
+/* --- Reseña histórica --- */
+.lugar-historia {
+    margin-top: 8px; padding: 10px 12px; border-radius: 10px;
+    background: var(--celeste); border: 1px solid var(--borde); font-size: .9rem; line-height: 1.45;
+}
+.lugar-historia.hidden { display: none; }
+.lugar-historia p { margin: 0 0 8px; }
+.hist-img { float: right; width: 96px; height: 96px; object-fit: cover; border-radius: 8px; margin: 0 0 6px 10px; }
+.hist-titulo { font-weight: 700; color: var(--azul-oscuro); }
+.hist-target { font-weight: 600; border-top: 1px dashed var(--borde); padding-top: 8px; }
+.hist-estado { opacity: .8; }
+.hist-fuente { font-size: .8rem; color: var(--azul-claro); }

@@ -798,6 +798,119 @@ function detectIntent(...texts) {
     return best;
 }
 
+// ===== Reseña histórica (Wikipedia) =====
+// Categorías donde tiene sentido mostrar historia
+const TOURIST_VALUES = new Set(['attraction', 'museum', 'monument', 'viewpoint', 'place_of_worship',
+    'theatre', 'marketplace', 'grave_yard', 'artwork', 'gallery']);
+
+const WIKI_CACHE_KEY = 'hablaSaltaWiki_v1';
+let wikiCache = {};
+try { wikiCache = JSON.parse(localStorage.getItem(WIKI_CACHE_KEY)) || {}; } catch (e) { wikiCache = {}; }
+function saveWikiCache() {
+    try {
+        const keys = Object.keys(wikiCache);
+        if (keys.length > 250) keys.slice(0, keys.length - 250).forEach(k => delete wikiCache[k]);
+        localStorage.setItem(WIKI_CACHE_KEY, JSON.stringify(wikiCache));
+    } catch (e) { /* sin espacio o bloqueado */ }
+}
+
+const WIKI_STOP = new Set(['salta', 'de', 'del', 'la', 'las', 'los', 'el', 'y', 'san', 'santa', 'museo', 'iglesia', 'plaza']);
+function wikiTokens(name) {
+    return normText(name).split(/[^a-z0-9]+/).filter(w => w.length > 2 && !WIKI_STOP.has(w));
+}
+// ¿El título del artículo corresponde al lugar?
+function wikiSimilar(title, name) {
+    const nt = normText(title);
+    const toks = wikiTokens(name);
+    if (!toks.length) return normText(name) === nt || nt.includes(normText(name));
+    const hits = toks.filter(t => nt.includes(t)).length;
+    return hits >= Math.min(2, toks.length);
+}
+function shortenText(text, max = 650) {
+    if (text.length <= max) return text;
+    const cut = text.slice(0, max);
+    const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('.\n'));
+    return (end > 200 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, '') + '…');
+}
+async function fetchJsonTimeout(url, ms = 9000) {
+    const res = await fetchWithTimeout(url, ms);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+/**
+ * Busca la reseña de un lugar. Devuelve:
+ *  - { title, extract, image, url }  si la encontró
+ *  - null                            si no hay reseña
+ *  - undefined                       si no se pudo (sin internet y sin copia guardada)
+ */
+async function wikiLookup(place) {
+    const key = place.wikipedia || `${normText(place.nombre)}|${place.lat.toFixed(3)},${place.lng.toFixed(3)}`;
+    const hit = wikiCache[key];
+    if (hit && (!hit.none || Date.now() - hit.t < 7 * 864e5)) return hit.none ? null : hit;
+    if (!navigator.onLine) return undefined;
+    try {
+        let title = null;
+        if (place.wikipedia && /^es:/.test(place.wikipedia)) {
+            title = place.wikipedia.slice(3);
+        } else {
+            const geo = await fetchJsonTimeout('https://es.wikipedia.org/w/api.php?action=query&list=geosearch'
+                + `&gscoord=${place.lat}%7C${place.lng}&gsradius=300&gslimit=15&format=json&formatversion=2&origin=*`);
+            const cands = (geo.query && geo.query.geosearch) || [];
+            const best = cands.find(c => wikiSimilar(c.title, place.nombre));
+            title = best && best.title;
+        }
+        if (!title) { wikiCache[key] = { none: true, t: Date.now() }; saveWikiCache(); return null; }
+        const sum = await fetchJsonTimeout('https://es.wikipedia.org/api/rest_v1/page/summary/'
+            + encodeURIComponent(title.replace(/ /g, '_')));
+        if (sum.type === 'disambiguation' || !sum.extract) {
+            wikiCache[key] = { none: true, t: Date.now() }; saveWikiCache(); return null;
+        }
+        const out = {
+            title: sum.title,
+            extract: shortenText(sum.extract),
+            image: (sum.thumbnail && sum.thumbnail.source) || '',
+            url: (sum.content_urls && sum.content_urls.desktop && sum.content_urls.desktop.page) || '',
+            t: Date.now()
+        };
+        wikiCache[key] = out;
+        saveWikiCache();
+        return out;
+    } catch (e) {
+        console.warn('Reseña no disponible:', e);
+        return undefined;
+    }
+}
+
+// Muestra la reseña dentro de la ficha del lugar
+async function showHistory(place, box, targetLang) {
+    box.classList.remove('hidden');
+    box.innerHTML = '<p class="hist-estado">Buscando la reseña…</p>';
+    const info = await wikiLookup(place);
+    if (info === undefined) {
+        box.innerHTML = '<p class="hist-estado">No se pudo cargar la reseña. Se guarda cuando la ves con internet.</p>';
+        return false;
+    }
+    if (info === null) {
+        box.innerHTML = '<p class="hist-estado">No encontramos una reseña de este lugar.</p>';
+        return false;
+    }
+    let translated = '';
+    const hasTarget = targetLang && targetLang !== 'auto' && targetLang !== 'es';
+    if (hasTarget) {
+        try { translated = await translateText(info.extract, 'es', targetLang); } catch (e) { translated = ''; }
+    }
+    box.innerHTML = `
+        ${info.image ? `<img class="hist-img" src="${escapeHtml(info.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+        <p class="hist-titulo">📖 ${escapeHtml(info.title)}</p>
+        <p class="hist-es">${escapeHtml(info.extract)}</p>
+        ${translated && translated !== info.extract
+            ? `<p class="hist-target" lang="${escapeHtml(targetLang)}" dir="auto">${escapeHtml(translated)}</p>` : ''}
+        ${info.url ? `<a class="hist-fuente" href="${escapeHtml(info.url)}" target="_blank" rel="noopener">Fuente: Wikipedia</a>` : ''}
+        <div style="clear:both"></div>`;
+    return true;
+}
+
 // --- Mapa ---
 function initMap(lat, lng) {
     if (!map) {
@@ -833,7 +946,10 @@ const CATEGORY_TAGS = {
     'shop=craft':             [['shop', 'craft|gift|souvenir|art']],
     'shop=bakery':            [['shop', 'bakery|pastry|confectionery']],
     'shop=laundry':           [['shop', 'laundry|dry_cleaning']],
-    'tourism=hotel':          [['tourism', 'hotel|hostel|guest_house|motel|apartment']]
+    'tourism=hotel':          [['tourism', 'hotel|hostel|guest_house|motel|apartment']],
+    'tourism=attraction':     [['tourism', 'attraction|artwork|gallery'], ['historic', 'monument|memorial|building|church|archaeological_site|manor|ruins']],
+    'tourism=museum':         [['tourism', 'museum|gallery']],
+    'historic=monument':      [['historic', 'monument|memorial|building|church|archaeological_site|manor|ruins'], ['tourism', 'attraction']]
 };
 
 // Nombre en español para cada tipo de lugar (cuando OSM no tiene nombre)
@@ -844,7 +960,11 @@ const TYPE_LABELS = {
     bar: 'Bar', pub: 'Pub', nightclub: 'Boliche', ice_cream: 'Heladería', supermarket: 'Supermercado',
     convenience: 'Almacén', bakery: 'Panadería', hotel: 'Hotel', hostel: 'Hostel', guest_house: 'Hospedaje',
     fuel: 'Estación de servicio', toilets: 'Baño público', fire_station: 'Bomberos', taxi: 'Parada de taxi',
-    parking: 'Estacionamiento', museum: 'Museo', post_office: 'Correo'
+    parking: 'Estacionamiento', museum: 'Museo', post_office: 'Correo',
+    attraction: 'Atractivo turístico', monument: 'Monumento', memorial: 'Memorial', viewpoint: 'Mirador',
+    gallery: 'Galería', place_of_worship: 'Iglesia / templo', theatre: 'Teatro', artwork: 'Obra de arte',
+    building: 'Edificio histórico', church: 'Iglesia', archaeological_site: 'Sitio arqueológico',
+    ruins: 'Ruinas', manor: 'Casona histórica', marketplace: 'Mercado', grave_yard: 'Cementerio'
 };
 
 const OVERPASS_MIRRORS = [
@@ -948,7 +1068,7 @@ function toPlace(el, userLat, userLng) {
     const lng = el.lon ?? (el.center && el.center.lon);
     if (lat == null || lng == null) return null;
     const t = el.tags || {};
-    const type = t.amenity || t.healthcare || t.shop || t.tourism || t.vending || '';
+    const type = t.amenity || t.healthcare || t.shop || t.tourism || t.vending || t.historic || '';
     const label = TYPE_LABELS[type] || '';
     const calle = t['addr:street'] ? `${t['addr:street']} ${t['addr:housenumber'] || ''}`.trim() : '';
     return {
@@ -959,6 +1079,7 @@ function toPlace(el, userLat, userLng) {
         telefono: t.phone || t['contact:phone'] || '',
         horario: t.opening_hours || '',
         emergencia: t.emergency === 'yes' || type === 'hospital',
+        wikipedia: t.wikipedia || '',
         distancia: distanciaMetros(userLat, userLng, lat, lng),
         fuente: 'osm'
     };
@@ -1008,7 +1129,7 @@ function distanciaMetros(lat1, lng1, lat2, lng2) {
 }
 
 // --- Respuesta de intención con sistema híbrido ---
-async function showIntentResponse(intent, userLat, userLng, targetLang) {
+async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {}) {
     let respuestaTarget = intent.respuesta_es;
     const hasTarget = targetLang && targetLang !== 'auto' && targetLang !== 'es';
 
@@ -1028,7 +1149,7 @@ async function showIntentResponse(intent, userLat, userLng, targetLang) {
             ? `<p class="intent-target" lang="${targetLang}">${escapeHtml(respuestaTarget)}</p>` : ''}
     `;
     intentResponse.classList.remove('hidden');
-    resultadoDiv.classList.add('hidden');
+    if (!opts.keepResult) resultadoDiv.classList.add('hidden');
 
     // En el modo turista no se lee nada en voz alta: solo suena si se toca 🔊
 
@@ -1116,10 +1237,23 @@ async function showIntentResponse(intent, userLat, userLng, targetLang) {
                 ${l.distancia != null ? `<small class="lugar-dist">${formatDistancia(l.distancia)}</small>` : ''}
                 ${l.horario ? `<small class="lugar-horario">🕒 ${escapeHtml(l.horario === '24/7' ? 'Abierto 24 hs' : l.horario)}</small>` : ''}
                 <div class="lugar-acciones">
+                    ${TOURIST_VALUES.has(value) ? '<button type="button" class="btn-mini btn-historia">📖 Historia</button>' : ''}
                     <a class="btn-mini" href="${linkComoLlegar(l)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>
                     ${tel ? `<a class="btn-mini" href="tel:${tel.replace(/[^\d+]/g, '')}">📞 Llamar</a>` : ''}
                 </div>
+                <div class="lugar-historia hidden"></div>
             </div>`;
+        const btnH = li.querySelector('.btn-historia');
+        if (btnH) {
+            const box = li.querySelector('.lugar-historia');
+            btnH.addEventListener('click', async (ev) => {
+                if (!box.classList.contains('hidden') && box.dataset.listo) { box.classList.add('hidden'); return; }
+                const ok = await showHistory(l, box, targetLang);
+                box.dataset.listo = ok ? '1' : '';
+                // Si la abrió una persona, que se vea completa (la automática no mueve la pantalla)
+                if (ev.isTrusted) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            });
+        }
         li.querySelector('.lugar-info strong').addEventListener('click', () => map.setView([l.lat, l.lng], 17));
         placesList.appendChild(li);
     });
@@ -1129,6 +1263,12 @@ async function showIntentResponse(intent, userLat, userLng, targetLang) {
         map.fitBounds(bounds.slice(0, userLat ? 6 : bounds.length), { padding: [30, 30], maxZoom: 16 });
     } else {
         map.setView(bounds[0], 15);
+    }
+
+    // En lugares turísticos se abre sola la reseña del más cercano
+    if (TOURIST_VALUES.has(value)) {
+        const primero = placesList.querySelector('.btn-historia');
+        if (primero) primero.click();
     }
 
     const cerca = lugares[0];
@@ -1236,6 +1376,13 @@ async function handleTranslate() {
             showResult(r.text, target, `ESPAÑOL → ${langName(target).toUpperCase()}`);
             speak(r.text, speechCode(target));
             updateStatus('Traducción lista. Mostrale la pantalla o tocá 🔊.');
+            // Si lo que escribiste es un lugar (catedral, museo, hospital…), muestra el mapa y la reseña
+            const intentYo = detectIntent(text);
+            if (intentYo) {
+                updateStatus('Buscando el lugar cerca tuyo...');
+                const pos = await getUserPosition();
+                await showIntentResponse(intentYo, pos && pos.lat, pos && pos.lng, target, { keepResult: true });
+            }
         } catch (error) {
             updateStatus(error.message, true);
         } finally {

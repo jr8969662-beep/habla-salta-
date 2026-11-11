@@ -159,7 +159,7 @@ async function downloadPlaces() {
     // Guardar solo lo necesario para que ocupe poco
     const KEEP = ['name', 'brand', 'operator', 'amenity', 'healthcare', 'shop', 'tourism', 'vending',
                   'atm', 'emergency', 'addr:street', 'addr:housenumber', 'phone', 'contact:phone',
-                  'opening_hours', 'aerialway', 'aeroway', 'railway', 'historic', 'leisure'];
+                  'opening_hours', 'aerialway', 'aeroway', 'railway', 'historic', 'leisure', 'wikipedia', 'wikidata'];
     const compact = elements.map(el => {
         const lat = el.lat ?? (el.center && el.center.lat);
         const lon = el.lon ?? (el.center && el.center.lon);
@@ -174,6 +174,25 @@ async function downloadPlaces() {
         { headers: { 'Content-Type': 'application/json' } }));
     offlinePlacesData = compact;
     return compact.length;
+}
+
+// Guarda la reseña de cada lugar turístico fijo de la app (Cabildo, Catedral, museos…)
+async function downloadHistories() {
+    const lugares = [];
+    INTENTS.forEach(it => {
+        if (!it.categoria || !TOURIST_VALUES.has(it.categoria.value)) return;
+        (it.lugares || []).forEach(l => lugares.push({ nombre: l.nombre, lat: l.lat, lng: l.lng, wikipedia: '' }));
+    });
+    let ok = 0, i = 0;
+    async function worker() {
+        while (i < lugares.length && downloading) {
+            const l = lugares[i++];
+            const r = await wikiLookup(l);
+            if (r) ok++;
+        }
+    }
+    await Promise.all([worker(), worker(), worker()]);
+    return ok;
 }
 
 async function downloadPhrases(lang) {
@@ -231,6 +250,11 @@ async function startOfflineDownload() {
         } else try { nLugares = await downloadPlaces(); lugaresNuevos = true; setStep('lugares', 'ok'); }
         catch (e) { console.warn(e); setStep('lugares', 'error'); }
 
+        // Reseñas históricas de los lugares turísticos principales (quedan guardadas para usar sin internet)
+        setOfflineStatus('Guardando reseñas históricas de los lugares turísticos…');
+        let nResenas = 0;
+        try { nResenas = await downloadHistories(); } catch (e) { console.warn('Reseñas:', e); }
+
         // Traductor sin internet (solo en la app Android)
         let langsNativos = null;
         if (NATIVE_OFFLINE) {
@@ -268,6 +292,7 @@ async function startOfflineDownload() {
         meta.fecha = Date.now();
         meta.tiles = r.ok;
         meta.lugares = nLugares || meta.lugares || 0;
+        if (nResenas) meta.resenas = nResenas;
         if (lugaresNuevos) meta.fechaLugares = Date.now();
         if (lang && !meta.langs.includes(lang)) meta.langs.push(lang);
         setOfflineMeta(meta);
@@ -334,7 +359,7 @@ async function renderOfflineInfo() {
         const f = new Date(meta.fecha).toLocaleDateString('es-AR');
         const langs = (meta.langs || []).map(langName).join(', ') || 'ninguno';
         const nativos = (meta.traductor || []).map(langName).join(', ');
-        info.innerHTML = `Descargado el ${f}${espacio}<br>Lugares guardados: ${meta.lugares || 0} · Respuestas en: ${escapeHtml(langs)}${NATIVE_OFFLINE ? `<br>Traductor sin internet: ${escapeHtml(nativos || 'ninguno')}` : ''}`;
+        info.innerHTML = `Descargado el ${f}${espacio}<br>Lugares guardados: ${meta.lugares || 0} · Reseñas: ${meta.resenas || 0} · Respuestas en: ${escapeHtml(langs)}${NATIVE_OFFLINE ? `<br>Traductor sin internet: ${escapeHtml(nativos || 'ninguno')}` : ''}`;
         ['app', 'mapa', 'lugares', 'traductor', 'frases'].forEach(s => {
             const li = document.querySelector(`[data-step="${s}"]`);
             if (!li || li.dataset.state) return;
