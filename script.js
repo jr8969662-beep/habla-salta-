@@ -1030,7 +1030,7 @@ async function showIntentResponse(intent, userLat, userLng, targetLang) {
     intentResponse.classList.remove('hidden');
     resultadoDiv.classList.add('hidden');
 
-    if (hasTarget) speak(respuestaTarget, speechCode(targetLang));
+    // En el modo turista no se lee nada en voz alta: solo suena si se toca 🔊
 
     mapContainer.classList.remove('hidden');
     renderEmergencyBanner(intent);
