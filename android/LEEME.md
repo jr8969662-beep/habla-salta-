@@ -30,3 +30,9 @@ La web se copia sola dentro de la app en cada compilación. Si cambiás `index.h
 5. El APK queda en `android/app/release/app-release.apk`.
 
 **Cuidá el archivo `.jks` y su contraseña**: sin ellos no se puede actualizar la app instalada.
+
+## Actualización automática de la web
+Desde la versión 50 la app, cuando hay internet, carga la web publicada en GitHub Pages
+(`LiveWebHandler.kt`). Los cambios de la web (index, script, estilos…) llegan solos al celular
+al abrir la app: **no hace falta generar otro APK**. Sin internet usa la copia que trae adentro.
+Solo hay que generar un APK nuevo si cambia código de Android (carpeta `android/`).

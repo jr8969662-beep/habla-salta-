@@ -66,7 +66,7 @@ class MainActivity : Activity() {
 
         assetLoader = WebViewAssetLoader.Builder()
             .setDomain(HOST)
-            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .addPathHandler("/assets/", LiveWebHandler(WebViewAssetLoader.AssetsPathHandler(this)) { isOnline() })
             .build()
 
         webView = WebView(this)
