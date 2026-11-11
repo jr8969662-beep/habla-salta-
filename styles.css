@@ -656,3 +656,44 @@ footer .aviso { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
     background: #0b3558; color: #fff; border: none; border-radius: 10px; padding: 10px 14px;
     font-size: .95rem; font-weight: 600; text-decoration: none; cursor: pointer;
 }
+
+
+/* --- Descarga: avance visible en el botón y aviso flotante --- */
+.btn-offline.bajando {
+    background: conic-gradient(var(--azul-claro) var(--p, 0%), var(--celeste) 0);
+}
+.btn-offline.bajando .offline-icon {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--blanco);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; font-weight: 800; color: var(--azul-oscuro);
+}
+.btn-offline.pausado::after, .btn-offline.incompleto::after {
+    content: '!'; position: absolute; right: -2px; bottom: -2px;
+    width: 18px; height: 18px; border-radius: 50%; background: #d97706; color: #fff;
+    font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.offline-pill {
+    position: fixed; z-index: 9998;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    left: calc(64px + env(safe-area-inset-left, 0px));
+    max-width: calc(100vw - 136px);
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px; border-radius: 999px; border: none; cursor: pointer;
+    background: var(--azul-oscuro); color: #fff; box-shadow: var(--sombra);
+    font-size: .8rem; font-weight: 600; text-align: left; line-height: 1.2;
+}
+.offline-pill.hidden { display: none; }
+.offline-pill .pill-pct { font-weight: 800; flex-shrink: 0; }
+.offline-pill .pill-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.offline-pill.bajando .pill-pct { min-width: 2.4em; }
+.offline-pill.pausado, .offline-pill.incompleto { background: #b45309; }
+.offline-pill.listo { background: #15803d; }
+.offline-pct { margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--azul-oscuro); text-align: center; min-height: 0; }
+.offline-pct:empty { display: none; }
+.paso-detalle { display: block; font-size: .78rem; opacity: .75; margin-top: 2px; }
+.paso-detalle:empty { display: none; }
+.offline-pasos li[data-state="cargando"] { outline: 2px solid var(--azul-claro); }
+#btn-descargar-todo.pausar { background: #b45309; }
+.offline-tip { font-weight: 600; }
+[data-theme="dark"] .offline-pct { color: var(--blanco); }
+.offline-box > * { flex-shrink: 0; }

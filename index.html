@@ -30,6 +30,9 @@
         <span class="offline-icon">⬇️</span>
     </button>
     <div id="offline-banner" class="offline-banner hidden"></div>
+    <button id="offline-pill" class="offline-pill hidden" type="button" aria-live="polite">
+        <span class="pill-pct"></span><span class="pill-txt"></span>
+    </button>
 
     <div id="offline-panel" class="offline-panel hidden" role="dialog" aria-labelledby="offline-titulo">
         <div class="offline-box">
@@ -39,16 +42,19 @@
             <ul class="offline-pasos">
                 <li data-step="app">📱 La app completa</li>
                 <li data-step="mapa">🗺️ Mapa de la provincia, la ciudad y el centro en detalle</li>
-                <li data-step="lugares">🏥 Hospitales, comisarías, farmacias, cajeros, cafés, museos y reseñas históricas</li>
+                <li data-step="lugares">🏥 Hospitales, comisarías, farmacias, cajeros, cafés y museos</li>
+                <li data-step="resenas">📖 Reseñas históricas de los lugares turísticos</li>
                 <li data-step="traductor" id="paso-traductor" hidden>🧠 Traductor y dictado sin internet (idioma elegido arriba)</li>
                 <li data-step="frases">💬 Respuestas de lugares en el idioma elegido arriba</li>
             </ul>
             <p id="offline-tamano" class="nota"></p>
+            <p id="offline-pct" class="offline-pct"></p>
             <div class="offline-progreso"><div id="offline-bar"></div></div>
             <p id="offline-status" class="offline-status"></p>
             <button id="btn-descargar-todo" class="btn-traducir">⬇️ Descargar todo</button>
+            <p class="nota offline-tip">Podés cerrar esta ventana y seguir usando la app: el avance se ve en el botón ⬇️. No cierres la app hasta que termine.</p>
             <p id="offline-info" class="offline-info"></p>
-            <p class="nota">Sin internet funcionan: mapa, lugares cercanos (el GPS anda sin señal), historial y textos ya traducidos. Traducir texto nuevo y el dictado por voz necesitan conexión.</p>
+            <p id="offline-nota-final" class="nota">Sin internet funcionan: mapa, lugares cercanos (el GPS anda sin señal), historial y textos ya traducidos. Traducir texto nuevo y el dictado por voz necesitan conexión.</p>
             <button id="btn-borrar-offline" class="btn-link" type="button">Borrar descarga</button>
         </div>
     </div>
