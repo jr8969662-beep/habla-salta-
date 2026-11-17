@@ -1279,21 +1279,117 @@ function distanciaMetros(lat1, lng1, lat2, lng2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+
+// --- Respuesta ordenada: título, un lugar por renglón (nombre + dirección) y notas aparte ---
+const ABREV = /\b(Av|Avda|Cnel|Pje|Gral|Dr|Dra|Sr|Sra|Sta|Sto|Bv|Bvd|Prof|Ing|Tte|Cap|Pte|Mons|Nº|N°|nro|St|Mt|Ave|Mr|Mrs|approx|aprox|ca|etc)\.$/i;
+function dividirOraciones(text) {
+    const partes = String(text).split(/(?<=[.!?。！？])\s+/);
+    const out = [];
+    partes.forEach(p => {
+        if (out.length && ABREV.test(out[out.length - 1])) out[out.length - 1] += ' ' + p;
+        else out.push(p);
+    });
+    return out.map(x => x.trim()).filter(Boolean);
+}
+// Corta por comas que no estén dentro de paréntesis
+function dividirLista(text) {
+    const items = [];
+    let nivel = 0, actual = '';
+    for (const ch of text) {
+        if (ch === '(' || ch === '（') nivel++;
+        if (ch === ')' || ch === '）') nivel = Math.max(0, nivel - 1);
+        if ((ch === ',' || ch === '，' || ch === ';' || ch === '、') && nivel === 0) { items.push(actual); actual = ''; }
+        else actual += ch;
+    }
+    items.push(actual);
+    return items.map(x => x.trim()
+        .replace(/^(y|e|and|et|und|e anche|i|и|και)\s+/i, '')
+        .replace(/[.。]$/, '').trim()).filter(Boolean);
+}
+function partirLugar(item, es) {
+    if (es) {
+        // "Banco Nación en Florida 575" / "Doña Salta (empanadas) en Córdoba 46"
+        let m = item.match(/^(.+?)\s+(?:(?:está|queda|están|quedan)\s+)?en\s+(.+\d.*)$/);
+        if (m) return { nombre: m[1], dir: m[2] };
+        // "Café del Tiempo (Balcarce 901)" / "Remis del Norte (0387 431-3000)"
+        m = item.match(/^(.+?)\s*\(([^()]*\d[^()]*)\)$/);
+        if (m) return { nombre: m[1], dir: m[2] };
+    }
+    return { nombre: item, dir: '' };
+}
+function htmlDir(dir) {
+    if (!dir) return '';
+    const tel = dir.match(/^(?:tel\.?\s*)?([0-9][0-9\s-]{6,})$/i);
+    if (tel) return `<a class="resp-dir resp-tel" href="tel:${tel[1].replace(/\D/g, '')}">📞 ${escapeHtml(tel[1].trim())}</a>`;
+    return `<span class="resp-dir">📍 ${escapeHtml(dir)}</span>`;
+}
+function capital(t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : t; }
+// Intenta leer una oración como lista de lugares; devuelve { titulo, lugares } o null
+function leerLista(o, es) {
+    const limpio = o.replace(/[.。]$/, '');
+    const c = limpio.search(/[:：]/);
+    let titulo = '', cuerpo = limpio;
+    if (c > 0 && c < 70) { titulo = limpio.slice(0, c).trim(); cuerpo = limpio.slice(c + 1); }
+    let items = dividirLista(cuerpo);
+    if (!titulo && es && items.length >= 2) {
+        // "Empanadas salteñas en Doña Salta (Córdoba 46), La Tacita (Balcarce 402)…"
+        const m = items[0].match(/^(.+?)\s+en\s+(.+)$/);
+        if (!m) return null;
+        if (/\b(está|queda|están|quedan)$/i.test(m[1])) return null;
+        titulo = m[1]; items[0] = m[2];
+    }
+    if (items.length < 2 || !titulo) return null;
+    const lugares = items.map(it => partirLugar(it, es));
+    // Sin título con dos puntos, exigir que parezcan lugares (con dirección o número)
+    if (c <= 0 && lugares.filter(l => l.dir || /\d/.test(l.nombre)).length < 2) return null;
+    return { titulo: capital(titulo.replace(/^Tenés\s+/i, '')), lugares };
+}
+function formatRespuesta(text, lang) {
+    const es = lang === 'es';
+    const bloques = [];
+    dividirOraciones(text).forEach(o => {
+        const lista = leerLista(o, es);
+        if (lista) { bloques.push({ tipo: 'lista', ...lista }); return; }
+        // "El Museo X está en Calle 123." -> se junta con otras oraciones iguales
+        const l = es ? partirLugar(o.replace(/[.]$/, ''), true) : null;
+        if (l && l.dir && l.nombre.length < 70 && !/[,;]/.test(l.nombre) && !/^(También|Y|Además|Ahí|Para|Hay|Se|Muchas|Muchos)\b/i.test(l.nombre)) {
+            const prev = bloques[bloques.length - 1];
+            if (prev && prev.tipo === 'sueltos') prev.lugares.push(l);
+            else bloques.push({ tipo: 'sueltos', lugares: [l], texto: [o] });
+            if (prev && prev.tipo === 'sueltos') prev.texto.push(o);
+            return;
+        }
+        const prev = bloques[bloques.length - 1];
+        if (prev && prev.tipo === 'nota') prev.textos.push(o); else bloques.push({ tipo: 'nota', textos: [o] });
+    });
+    if (!bloques.some(b => b.tipo === 'lista' || (b.tipo === 'sueltos' && b.lugares.length >= 2))) {
+        return `<p class="resp-texto">${escapeHtml(text)}</p>`;
+    }
+    const li = l => `<li><span class="resp-nombre">${escapeHtml(capital(l.nombre))}</span>${htmlDir(l.dir)}</li>`;
+    return bloques.map(b => {
+        if (b.tipo === 'lista') return `<p class="resp-titulo">${escapeHtml(b.titulo)}</p><ul class="resp-lista">${b.lugares.map(li).join('')}</ul>`;
+        if (b.tipo === 'sueltos') return `<ul class="resp-lista">${b.lugares.map(li).join('')}</ul>`;
+        return b.textos.map(t => `<p class="resp-nota">${escapeHtml(t)}</p>`).join('');
+    }).join('');
+}
+
 // --- Respuesta de intención con sistema híbrido ---
 async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {}) {
     const hasTarget = targetLang && targetLang !== 'auto' && targetLang !== 'es';
     const fija = hasTarget && intent['respuesta_' + targetLang];
+    const nombreIdioma = hasTarget ? langName(targetLang) : '';
     intentResponse.innerHTML = `
-        <p class="intent-es">${escapeHtml(intent.respuesta_es)}</p>
-        ${fija ? `<p class="intent-target" lang="${targetLang}">${escapeHtml(fija)}</p>`
-               : hasTarget ? `<p class="intent-target cargando-txt" lang="${targetLang}">…</p>` : ''}
+        <div class="intent-es">${formatRespuesta(intent.respuesta_es, 'es')}</div>
+        ${fija ? `<div class="intent-target" lang="${targetLang}"><p class="resp-idioma">Para el turista · ${escapeHtml(nombreIdioma)}</p>${formatRespuesta(fija, targetLang)}</div>`
+               : hasTarget ? `<div class="intent-target" lang="${targetLang}"><p class="resp-idioma">Para el turista · ${escapeHtml(nombreIdioma)}</p><p class="cargando-txt">Traduciendo…</p></div>` : ''}
     `;
     if (hasTarget && !fija) {
         const el = intentResponse.querySelector('.intent-target');
         translateText(intent.respuesta_es, 'es', targetLang).then(t => {
             if (!el.isConnected) return;
-            if (t && t !== intent.respuesta_es) { el.textContent = t; el.classList.remove('cargando-txt'); }
-            else el.remove();
+            if (t && t !== intent.respuesta_es) {
+                el.innerHTML = `<p class="resp-idioma">Para el turista · ${escapeHtml(nombreIdioma)}</p>${formatRespuesta(t, targetLang)}`;
+            } else el.remove();
         }, () => { if (el.isConnected) el.remove(); });
     }
     intentResponse.classList.remove('hidden');

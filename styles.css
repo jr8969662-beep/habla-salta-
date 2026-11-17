@@ -911,3 +911,29 @@ body::after {
 .card { border-color: rgba(255, 255, 255, .5); box-shadow: 0 2px 4px rgba(0, 0, 0, .08), 0 18px 40px rgba(0, 0, 0, .28); }
 [data-theme="dark"] .card { border-color: rgba(255, 255, 255, .08); }
 footer { color: #fff; opacity: .9; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+
+/* --- Respuesta ordenada (lugares con dirección) --- */
+.intent-response { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.intent-response .intent-es, .intent-response .intent-target { margin: 0; font-size: inherit; font-weight: 400; font-style: normal; opacity: 1; }
+.resp-titulo { font-size: 1.05rem; font-weight: 800; color: var(--azul-oscuro); margin: 0 0 8px; line-height: 1.3; }
+.resp-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.resp-lista li {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 9px 0; border-top: 1px solid var(--borde);
+}
+.resp-lista li:first-child { border-top: none; padding-top: 2px; }
+.resp-nombre { font-weight: 700; color: var(--azul-oscuro); font-size: .98rem; line-height: 1.3; }
+.resp-dir { font-size: .9rem; color: var(--gris-texto); line-height: 1.35; }
+a.resp-tel { color: var(--azul-claro); font-weight: 600; text-decoration: none; }
+.resp-nota { margin: 8px 0 0; font-size: .88rem; line-height: 1.45; color: var(--gris-texto); }
+.resp-texto { margin: 0; font-size: .98rem; line-height: 1.5; color: var(--azul-oscuro); font-weight: 600; }
+.intent-target { border-top: 1px dashed var(--borde); padding-top: 12px; }
+.intent-target .resp-titulo { font-size: .98rem; }
+.intent-target .resp-nombre { font-weight: 600; }
+.resp-idioma { margin: 0 0 6px; font-size: .8rem; font-weight: 700; color: var(--azul-claro); }
+
+.resp-lista + .resp-titulo, .resp-nota + .resp-titulo, .resp-lista + .resp-lista { margin-top: 12px; }
+.resp-nota:first-child { margin-top: 0; }
+.resp-nota + .resp-lista { margin-top: 6px; }
+.resp-lista li { padding: 7px 0; }
+.intent-target .resp-nombre { font-weight: 500; font-size: .93rem; }
