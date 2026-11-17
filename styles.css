@@ -946,3 +946,17 @@ a.resp-tel { color: var(--azul-claro); font-weight: 600; text-decoration: none; 
 .map-container .btn-ver-todos { margin: -4px 0 10px; }
 .aviso-nombre:not(button) { margin: -4px 0 10px; font-size: .9rem; color: var(--gris-texto); }
 .aviso-nombre a { color: var(--azul-claro); font-weight: 600; }
+
+/* --- Aviso de versión nueva --- */
+.aviso-version {
+    position: fixed; z-index: 1600; left: 50%; bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 20px); opacity: 0; transition: transform .25s ease, opacity .25s ease;
+    width: min(calc(100vw - 32px), 440px);
+    display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px;
+    background: #23262B; color: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    font-size: .92rem; font-weight: 600;
+}
+.aviso-version.visible { transform: translate(-50%, 0); opacity: 1; }
+.aviso-version span { flex: 1; }
+.av-actualizar { background: #B3132B; color: #fff; border: none; border-radius: 10px; padding: 9px 14px; font-weight: 800; cursor: pointer; }
+.av-cerrar { background: none; border: none; color: #fff; opacity: .7; font-size: 1rem; width: 32px; height: 32px; cursor: pointer; }

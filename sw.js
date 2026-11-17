@@ -62,8 +62,11 @@ self.addEventListener('fetch', event => {
     if (isApp) {
         event.respondWith((async () => {
             try {
-                const res = await fetch(req);
-                if (res.ok) {
+                // 'no-cache' = preguntar siempre al servidor si hay versión nueva (evita archivos viejos)
+                const res = url.origin === self.location.origin
+                    ? await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
+                    : await fetch(req);
+                if (res.ok && !url.search) {
                     const cache = await caches.open(APP_CACHE);
                     cache.put(req, res.clone());
                 }

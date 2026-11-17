@@ -2123,3 +2123,55 @@ textoEntrada.addEventListener('input', e => {
         try { textoEntrada.setSelectionRange(pos, pos); } catch (err) {}
     }
 });
+
+// --- Aviso de versión nueva: revisa version.js publicado y ofrece actualizar ---
+(function avisoActualizacion() {
+    const actual = parseInt(window.APP_VERSION, 10);
+    if (!actual) return;
+    let mostrado = 0, ultimaRevision = 0;
+    const descartada = () => { try { return parseInt(localStorage.getItem('hsVersionDescartada'), 10) || 0; } catch (e) { return 0; } };
+
+    function mostrar(nueva) {
+        if (mostrado === nueva || nueva <= descartada()) return;
+        mostrado = nueva;
+        let el = document.getElementById('aviso-version');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'aviso-version';
+            el.className = 'aviso-version';
+            el.setAttribute('role', 'status');
+            document.body.appendChild(el);
+        }
+        el.innerHTML = `<span>Hay una versión nueva (v${nueva})</span>
+            <button type="button" class="av-actualizar">Actualizar</button>
+            <button type="button" class="av-cerrar" aria-label="Ahora no">✕</button>`;
+        el.querySelector('.av-actualizar').addEventListener('click', () => {
+            el.querySelector('span').textContent = 'Actualizando…';
+            location.reload();
+        });
+        el.querySelector('.av-cerrar').addEventListener('click', () => {
+            try { localStorage.setItem('hsVersionDescartada', String(nueva)); } catch (e) {}
+            el.remove();
+        });
+        requestAnimationFrame(() => el.classList.add('visible'));
+    }
+
+    async function revisar() {
+        if (!navigator.onLine || location.protocol === 'file:') return;
+        if (Date.now() - ultimaRevision < 60000) return;
+        ultimaRevision = Date.now();
+        try {
+            const res = await fetch(`version.js?t=${Date.now()}`, { cache: 'no-store' });
+            if (!res.ok) return;
+            const m = (await res.text()).match(/APP_VERSION\s*=\s*["'](\d+)["']/);
+            const nueva = m ? parseInt(m[1], 10) : 0;
+            // No interrumpir una descarga sin internet en curso
+            if (nueva > actual && !(typeof downloading !== 'undefined' && downloading)) mostrar(nueva);
+        } catch (e) { /* sin conexión: se revisa más tarde */ }
+    }
+
+    setTimeout(revisar, 4000);
+    setInterval(revisar, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') revisar(); });
+    window.addEventListener('online', revisar);
+})();
