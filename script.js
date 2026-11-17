@@ -72,10 +72,10 @@ const INTENTS = [
       ] },
 
     { keywords: ['tren','tren a las nubes','nubes','train'],
-      respuesta_es: 'El Tren a las Nubes sale de la Estación Salta, en Ameghino 720. Funciona de martes a domingo, con salidas a las 7:05 hs. Reservas en trenalasnubes.com.ar o en la boletería.',
+      respuesta_es: 'El Tren a las Nubes hoy se hace en dos tramos: un bus sale temprano desde la ciudad de Salta hasta San Antonio de los Cobres (a 3.700 m de altura) y desde ahí el tren sube hasta el Viaducto La Polvorilla, a más de 4.200 m. Es una excursión de todo el día (Bus-Tren-Bus). También existe la opción "solo tren" si llegás por tu cuenta a San Antonio de los Cobres. Días, horarios y pasajes en trenalasnubes.com.ar. Llevá abrigo y agua: hace frío y la altura se siente.',
       categoria: { key: 'railway', value: 'station' },
       lugares: [
-        { nombre: 'Estación Tren a las Nubes', direccion: 'Ameghino 720', lat: -24.7930, lng: -65.4020 }
+        { nombre: 'San Antonio de los Cobres (sale el tren)', direccion: 'San Antonio de los Cobres, Salta', lat: -24.2250, lng: -66.3190 }
       ] },
 
     { keywords: ['teleferico','teleférico','cable car','aerial'],
@@ -202,7 +202,7 @@ const INTENTS = [
       categoria: { key: 'shop', value: 'books' } },
 
     // ==== GASTRONOMÍA ====
-    { keywords: ['empanada','comida típica','regional','locro','humita','tamal'],
+    { keywords: ['empanada','comida típica','comida tipica','plato típico','comida regional','regional','locro','humita','tamal','typical food','local food'],
       respuesta_es: 'Empanadas salteñas en Doña Salta (Córdoba 46), La Tacita (Balcarce 402), El Solar del Convento (Caseros 444). Locro y humita en peñas de Balcarce.',
       categoria: { key: 'amenity', value: 'restaurant' } },
 
@@ -215,7 +215,7 @@ const INTENTS = [
         { nombre: 'Cafetería Boston', direccion: 'Caseros 468', lat: -24.7886, lng: -65.4100 }
       ] },
 
-    { keywords: ['bar','pub','peña','cerveza','trago','noche'],
+    { keywords: ['bar','pub','peña','peñas','folclore','folklore','musica en vivo','música en vivo','cerveza','trago','noche','salir de noche','live music','nightlife'],
       respuesta_es: 'La calle Balcarce es la zona de bares y peñas: La Vieja Estación (Balcarce 875), El Solar del Convento (Caseros 444), La Casona del Molino (Luis Burela 1). Todas con música en vivo.',
       categoria: { key: 'amenity', value: 'bar' },
       lugares: [
@@ -244,12 +244,12 @@ const INTENTS = [
 
     // ==== SALUD Y EMERGENCIAS ====
     { keywords: ['policia','policía','comisaria','911','emergencia policial'],
-      respuesta_es: 'Comisaría 1ª en Belgrano 401. Policía Federal en España 725. Para emergencias, llamá al 911. La Policía Turística está en Caseros 417.',
+      respuesta_es: 'Comisaría 1ª en Belgrano 401. Policía Federal en España 725. Para emergencias, llamá al 911. La Policía Turística está en Mitre 23 (tel. 0387 431-3799).',
       categoria: { key: 'amenity', value: 'police' },
       lugares: [
         { nombre: 'Comisaría 1ª', direccion: 'Belgrano 401', lat: -24.7895, lng: -65.4088 },
         { nombre: 'Policía Federal', direccion: 'España 725', lat: -24.7874, lng: -65.4119 },
-        { nombre: 'Policía Turística', direccion: 'Caseros 417', lat: -24.7886, lng: -65.4099 }
+        { nombre: 'Policía Turística', direccion: 'Mitre 23', lat: -24.7880, lng: -65.4108 }
       ] },
 
     { keywords: ['bombero','bomberos','incendio'],
@@ -276,10 +276,11 @@ const INTENTS = [
       categoria: { key: 'amenity', value: 'internet_cafe' } },
 
     { keywords: ['informacion','información','turistica','turística','tourist info','oficina de turismo'],
-      respuesta_es: 'La Oficina de Información Turística de Salta está en Caseros 419, frente a la Plaza 9 de Julio. Abre todos los días. También hay un puesto en el Aeropuerto.',
+      respuesta_es: 'Centro de Atención al Visitante: Caseros 711 (0800 777 0300, WhatsApp 387 463-4653). Ministerio de Turismo de la provincia: Buenos Aires 93 (0387 431-0950). También hay una oficina en el Aeropuerto. La Policía Turística está en Mitre 23 (0387 431-3799).',
       categoria: { key: 'tourism', value: 'information' },
       lugares: [
-        { nombre: 'Oficina de Información Turística', direccion: 'Caseros 419', lat: -24.7884, lng: -65.4101 },
+        { nombre: 'Centro de Atención al Visitante', direccion: 'Caseros 711', lat: -24.7886, lng: -65.4076 },
+        { nombre: 'Ministerio de Turismo', direccion: 'Buenos Aires 93', lat: -24.7895, lng: -65.4108 },
         { nombre: 'Información Turística Aeropuerto', direccion: 'Aeropuerto Martín M. de Güemes', lat: -24.8560, lng: -65.4860 }
       ] },
 
@@ -433,7 +434,122 @@ const INTENTS = [
       lugares: [
         { nombre: 'Universidad Nacional de Salta', direccion: 'Av. Bolivia 5150', lat: -24.7730, lng: -65.4170 },
         { nombre: 'UCASAL', direccion: 'Pellegrini 790', lat: -24.7860, lng: -65.4060 }
-      ] }
+      ] },
+    // ==== DINERO ====
+    { keywords: ['casa de cambio','casas de cambio','cambiar dinero','cambiar plata','cambiar dolares','cambiar dólares','cambiar euros','cambiar reales','cambio de moneda','dolar','dólar','dolares','dólares','euros','reales','money exchange','exchange money','change money','currency exchange','exchange office','wechselstube','geld wechseln','bureau de change','cambio valuta','casa de câmbio','trocar dinheiro'],
+      respuesta_es: 'Para cambiar dólares, euros o reales podés ir a una casa de cambio del centro, como Cambio/Exchange en España 604, o a un banco con tu pasaporte (lunes a viernes por la mañana). Llevá billetes en buen estado: suelen rechazar los rotos, manchados o escritos. Western Union y otras agencias de envíos también te dan pesos. En la ciudad casi todos aceptan tarjeta; en los pueblos conviene llevar efectivo.',
+      categoria: { key: 'amenity', value: 'bureau_de_change' } },
+
+    { keywords: ['pagar con tarjeta','aceptan tarjeta','tarjeta de credito','tarjeta de crédito','tarjeta de debito','tarjeta de débito','pago con tarjeta','pesos argentinos','moneda local','qué moneda','que moneda','credit card','pay by card','do you accept card','local currency','kreditkarte','carte bancaire','cartão de crédito'],
+      respuesta_es: 'La moneda es el peso argentino. En la ciudad de Salta casi todos los comercios, restaurantes y hoteles aceptan tarjetas de crédito y débito, y muchos también transferencias o pago con QR. En los pueblos chicos, ferias y taxis conviene llevar efectivo. Algunos lugares ofrecen descuento por pagar en efectivo.' },
+
+    { keywords: ['propina','propinas','cuanto dejo','cuánto dejo','tip','tips','tipping','trinkgeld','pourboire','gorjeta','mancia'],
+      respuesta_es: 'En restaurantes y bares se acostumbra dejar alrededor del 10 % de propina si el servicio fue bueno; no suele estar incluida en la cuenta. En taxis no es obligatoria (se redondea). A guías y choferes de excursiones se les deja algo a voluntad.' },
+
+    // ==== TRÁMITES Y DOCUMENTOS ====
+    { keywords: ['consulado','consulados','embajada','embajadas','consul','cónsul','perdi el pasaporte','perdí el pasaporte','pasaporte perdido','robaron el pasaporte','consulate','embassy','lost passport','passport stolen','konsulat','botschaft','consulat','ambassade','consolato','ambasciata','consulado do brasil'],
+      respuesta_es: 'Consulados en Salta: Chile, Consulado General en Santiago del Estero 965 (0387 421-5757). Perú, Consulado Honorario en Acevedo 295 (0387 423-0809). Bolivia y Paraguay también tienen consulado en la ciudad, y varios países europeos tienen cónsul honorario. España se atiende desde el Consulado General en Córdoba. Si perdiste o te robaron el pasaporte, primero hacé la denuncia en una comisaría y llevá la constancia al consulado de tu país.',
+      categoria: { key: 'office', value: 'diplomatic' } },
+
+    { keywords: ['migraciones','migracion','migración','extender la estadia','extender estadía','prorroga','prórroga','visa','vencio la visa','venció la visa','residencia','immigration','immigration office','visa extension','extend my stay','einwanderung','imigração'],
+      respuesta_es: 'La Dirección Nacional de Migraciones, Delegación Salta, está en Maipú 35 (0387 422-0438) y atiende de lunes a viernes por la mañana. Los turnos y la mayoría de los trámites (por ejemplo, prórroga de estadía de turista) se inician en migraciones.gob.ar. Llevá tu pasaporte o el documento con el que entraste al país.' },
+
+    // ==== EXCURSIONES Y DESTINOS ====
+    { keywords: ['excursion','excursión','excursiones','tour','tours','agencia de turismo','agencia de viajes','paseo','paseos','visita guiada','guia turistico','guía turístico','que puedo visitar','qué puedo visitar','que hacer','qué hacer','day trip','tour operator','travel agency','sightseeing','ausflug','gita','passeio','excursão'],
+      respuesta_es: 'Las excursiones más pedidas desde Salta: Cafayate y la Quebrada de las Conchas (día completo), Cachi por la Cuesta del Obispo y el Parque Nacional Los Cardones, Salinas Grandes y Purmamarca, la Quebrada de Humahuaca, y el Tren a las Nubes. Se contratan en agencias de turismo del centro o en el Centro de Atención al Visitante (Caseros 711). Salen temprano, entre las 7 y las 8 de la mañana.',
+      categoria: { key: 'shop', value: 'travel_agency' } },
+
+    { keywords: ['cafayate','quebrada de las conchas','garganta del diablo','anfiteatro','torrontes','torrontés'],
+      respuesta_es: 'Cafayate está a unos 190 km de Salta (3 horas y media a 4 horas en auto por la Ruta 68). El camino atraviesa la Quebrada de las Conchas, con la Garganta del Diablo y el Anfiteatro. Es la tierra del vino torrontés, con muchas bodegas para visitar. Hay micros desde la Terminal de Ómnibus y excursiones de día completo en agencias.',
+      lugares: [ { nombre: 'Cafayate', direccion: 'Cafayate, Salta (Ruta 68)', lat: -26.0730, lng: -65.9760 } ] },
+
+    { keywords: ['cachi','cuesta del obispo','los cardones','parque nacional los cardones','recta del tin tin'],
+      respuesta_es: 'Cachi está a unos 160 km de Salta (unas 4 horas). Se sube por la Cuesta del Obispo, a más de 3.300 m, y se cruza el Parque Nacional Los Cardones por la Recta del Tin Tin. Es un pueblo colonial de casas blancas en los Valles Calchaquíes. Hay micros desde la Terminal y excursiones de día completo.',
+      lugares: [ { nombre: 'Cachi', direccion: 'Cachi, Salta (Ruta 33 y 40)', lat: -25.1200, lng: -66.1630 } ] },
+
+    { keywords: ['purmamarca','cerro de los siete colores','siete colores','salinas grandes','salinas','tilcara','pucara','pucará','humahuaca','quebrada de humahuaca','hornocal','serrania del hornocal','jujuy'],
+      respuesta_es: 'La Quebrada de Humahuaca está en la provincia vecina de Jujuy. Purmamarca (Cerro de los Siete Colores) queda a unas 3 horas de Salta; Tilcara (Pucará) a unas 3 horas y media; Humahuaca y el Hornocal a unas 4 horas. Las Salinas Grandes están a 1 hora de Purmamarca por la Cuesta de Lipán. Hay micros desde la Terminal de Ómnibus y excursiones de día completo.',
+      lugares: [
+        { nombre: 'Purmamarca', direccion: 'Purmamarca, Jujuy', lat: -23.7450, lng: -65.4990 },
+        { nombre: 'Tilcara', direccion: 'Tilcara, Jujuy', lat: -23.5770, lng: -65.3960 },
+        { nombre: 'Humahuaca', direccion: 'Humahuaca, Jujuy', lat: -23.2050, lng: -65.3500 },
+        { nombre: 'Salinas Grandes', direccion: 'Ruta 52, Jujuy', lat: -23.6200, lng: -65.8800 }
+      ] },
+
+    { keywords: ['san lorenzo','quebrada de san lorenzo','iruya','san antonio de los cobres','la poma','molinos','seclantas'],
+      respuesta_es: 'San Lorenzo es una villa veraniega a unos 11 km del centro (20 minutos), con la Quebrada de San Lorenzo para caminar; se llega en colectivo SAETA o taxi. San Antonio de los Cobres está a unas 3 horas y media, en la Puna (3.700 m). Iruya es un pueblo de montaña a unas 7 horas, por camino de ripio desde Humahuaca.',
+      lugares: [
+        { nombre: 'San Lorenzo', direccion: 'Villa San Lorenzo, Salta', lat: -24.7310, lng: -65.4880 },
+        { nombre: 'San Antonio de los Cobres', direccion: 'San Antonio de los Cobres, Salta', lat: -24.2250, lng: -66.3190 },
+        { nombre: 'Iruya', direccion: 'Iruya, Salta', lat: -22.7900, lng: -65.2140 }
+      ] },
+
+    { keywords: ['vino','vinos','vinoteca','vinotecas','bodega','bodegas','degustacion','degustación','wine','wine shop','winery','wine tasting','wein','vin','vinho','cata de vinos'],
+      respuesta_es: 'El vino típico de Salta es el torrontés, un blanco aromático de Cafayate, y también hay muy buenos malbec y tannat de altura. En la ciudad hay vinotecas en el centro; las bodegas para visitar y degustar están en Cafayate y en los Valles Calchaquíes.',
+      categoria: { key: 'shop', value: 'wine' } },
+
+    { keywords: ['parque','parques','plaza','plazas','espacio verde','lago','botes','caminar','correr','park','garden','picnic','jogging','parc','parco'],
+      respuesta_es: 'Para pasear al aire libre: el Parque San Martín, con lago y botes, al sur del centro; la Plaza 9 de Julio, frente a la Catedral; y el Cerro San Bernardo, al que se sube por el teleférico o a pie por una escalinata de unos 1.000 escalones.',
+      categoria: { key: 'leisure', value: 'park' } },
+
+    // ==== COMIDA ESPECIAL ====
+    { keywords: ['restaurante vegetariano','restaurantes vegetarianos','comida vegetariana','comida vegana','vegetariano','vegetariana','vegano','vegana','sin carne','vegetarian','vegan','végétarien','vegetarisch','vegetariano'],
+      respuesta_es: 'Hay restaurantes con opciones vegetarianas y veganas en el centro. Muchas comidas típicas tienen versión sin carne: humitas, tamales de queso, empanadas de queso o de humita, y locro vegetariano en algunos lugares. Preguntá siempre "¿tiene carne o grasa animal?".',
+      categoria: { key: 'diet', value: 'vegetarian' } },
+
+    { keywords: ['sin tacc','comida sin tacc','restaurante sin tacc','celiaco','celíaco','celiaca','celíaca','sin gluten','gluten','gluten free','coeliac','celiac','glutenfrei','sans gluten','senza glutine','sem glúten'],
+      respuesta_es: 'Para celíacos: buscá el logo "Sin TACC" en los productos, y en los supermercados suele haber una góndola sin gluten. Algunos restaurantes tienen menú sin TACC; avisá siempre que sos celíaco para evitar contaminación cruzada.',
+      categoria: { key: 'diet', value: 'gluten_free' } },
+
+    // ==== SALUD (otros) ====
+    { keywords: ['dentista','odontologo','odontólogo','muela','muelas','diente','dientes','dolor de muela','dentist','toothache','tooth','zahnarzt','dentiste','dentista'],
+      respuesta_es: 'Para un dolor de muela o una urgencia dental, buscá un consultorio odontológico cercano. Muchos hospitales tienen guardia odontológica. Si es grave o hay hinchazón con fiebre, andá a la guardia del Hospital San Bernardo.',
+      categoria: { key: 'amenity', value: 'dentist' } },
+
+    { keywords: ['optica','óptica','anteojos','lentes','gafas','lentes de contacto','se me rompieron los anteojos','glasses','optician','contact lenses','brille','lunettes','occhiali','óculos'],
+      respuesta_es: 'Hay varias ópticas en el centro, sobre todo en la peatonal Florida y alrededores. Muchas arreglan anteojos en el día.',
+      categoria: { key: 'shop', value: 'optician' } },
+
+    { keywords: ['altura','apunamiento','soroche','mal de altura','mal de puna','puna','me falta el aire','hoja de coca','coca','altitude','altitude sickness','mountain sickness','höhenkrankheit','mal des montagnes','mal de altitude'],
+      respuesta_es: 'Salta capital está a 1.150 m y no da problemas, pero en la Puna, Salinas Grandes, San Antonio de los Cobres o la Cuesta del Obispo se superan los 3.000 m. Para evitar el apunamiento: subí despacio, tomá mucha agua, comé liviano, evitá el alcohol y no corras. El té o las hojas de coca ayudan. Si hay dolor de cabeza fuerte, mareo o falta de aire que no pasa, bajá y consultá a un médico.' },
+
+    // ==== AUTO ====
+    { keywords: ['gomeria','gomería','goma pinchada','se pincho','se pinchó','se me pincho','se me pinchó','pinchó','goma','gomas','pinche','pinché','rueda pinchada','neumatico','neumático','flat tire','flat tyre','puncture','tyre','tire','reifenpanne','crevaison','pneu furado'],
+      respuesta_es: 'Las gomerías arreglan pinchaduras y cambian neumáticos, y suele haber varias sobre las avenidas. Si estás en la ruta, la estación de servicio más cercana normalmente tiene gomería o te indica una.',
+      categoria: { key: 'shop', value: 'tyres' } },
+
+    { keywords: ['taller mecanico','taller mecánico','mecanico','mecánico','se rompio el auto','se rompió el auto','auxilio mecanico','auxilio mecánico','grua','grúa','auto roto','car repair','mechanic','breakdown','tow truck','werkstatt','garage auto','mecânico'],
+      respuesta_es: 'Para una falla del auto buscá un taller mecánico cercano. Si es alquilado, llamá primero a la empresa de alquiler: el auxilio suele estar incluido. Si tenés seguro o sos socio del Automóvil Club Argentino (ACA), pedí el auxilio mecánico por teléfono.',
+      categoria: { key: 'shop', value: 'car_repair' } },
+
+    // ==== OTROS ====
+    { keywords: ['veterinaria','veterinario','mi perro','mi gato','perro enfermo','gato enfermo','mascota enferma','perro','gato','mascota','vet','veterinarian','pet','tierarzt','vétérinaire'],
+      respuesta_es: 'Hay veterinarias en distintos barrios; algunas atienden guardias de urgencia. Te muestro las más cercanas.',
+      categoria: { key: 'amenity', value: 'veterinary' } },
+
+    { keywords: ['kiosco','kiosko','kioscos','golosinas','cigarrillos','gaseosa','comprar agua','botella de agua','snack','snacks','kiosk','convenience store','späti'],
+      respuesta_es: 'Los kioscos venden bebidas, agua, golosinas, cigarrillos y cargas para el celular y la tarjeta SAETA. Hay en casi todas las cuadras del centro y varios abren hasta tarde.',
+      categoria: { key: 'shop', value: 'kiosk' } },
+
+    { keywords: ['ferreteria','ferretería','herramienta','pilas','cinta','candado','hardware store','tools','batteries','eisenwarenladen','quincaillerie'],
+      respuesta_es: 'Las ferreterías venden herramientas, pilas, candados y adaptadores eléctricos. Te muestro las más cercanas.',
+      categoria: { key: 'shop', value: 'hardware' } },
+
+    // ==== DUDAS FRECUENTES (sin mapa) ====
+    { keywords: ['clima','frio','frío','calor','lluvia','llueve','que ropa','qué ropa','abrigo','temperatura','weather','cold','hot','rain','what to wear','wetter','météo','tempo','clima'],
+      respuesta_es: 'Salta tiene días soleados casi todo el año. En verano (diciembre a marzo) hace calor y llueve por la tarde; en invierno (junio a agosto) los días son templados y las noches frías. Llevá ropa en capas, protector solar y sombrero. En la Puna y la montaña hace mucho frío aunque haya sol.' },
+
+    { keywords: ['es seguro','es peligroso','seguridad','inseguro','zona peligrosa','safe','is it safe','dangerous','sicher','gefährlich','sûr','dangereux','seguro'],
+      respuesta_es: 'El centro de Salta es tranquilo para caminar, de día y de noche por las calles con movimiento. Como en cualquier ciudad: cuidá el celular y la billetera en lugares con gente, usá taxis o remises habilitados de noche y no dejes cosas a la vista en el auto. Ante cualquier problema llamá al 911 o andá a la Policía Turística (Mitre 23).' },
+
+    { keywords: ['agua potable','agua de la canilla','agua del grifo','se puede tomar el agua','tomar agua de la canilla','tap water','drinking water','is the water safe','leitungswasser','eau du robinet','água da torneira'],
+      respuesta_es: 'En la ciudad de Salta el agua de la canilla es potable. En pueblos chicos, la Puna y la montaña conviene tomar agua envasada.' },
+
+    { keywords: ['enchufe','enchufes','adaptador','voltaje','220','tension electrica','plug','adapter','socket','voltage','stecker','prise','tomada'],
+      respuesta_es: 'En Argentina la corriente es de 220 V y 50 Hz. Los enchufes son de tres patas planas en "V" (tipo I) y también se usa el de dos patas redondas (tipo C). Los adaptadores se consiguen en ferreterías, kioscos y supermercados.' },
+
+    { keywords: ['siesta','a que hora abren','a qué hora abren','a que hora cierran','a qué hora cierran','horario de comercio','horarios de los negocios','horario de cena','a que hora se cena','opening hours','closing time','what time do shops','öffnungszeiten','horaires','horário'],
+      respuesta_es: 'En Salta muchos negocios abren de 9 a 13 y de 17 a 21, y cierran al mediodía por la siesta; supermercados y shoppings abren corrido. Los bancos atienden de lunes a viernes por la mañana. Se almuerza entre las 13 y las 15 y se cena tarde, desde las 21.' }
 ];
 
 // --- Estado ---
@@ -888,7 +1004,7 @@ const EXTRA_KEYWORDS = {
     pharmacy: ['farmacia','farmacias','remedio','medicamento','pastilla','pharmacy','drugstore',
                'apotheke','pharmacie','farmacia de turno'],
     restaurant: ['restaurante','restaurant','comer','comida','almorzar','cenar','hungry','eat','food'],
-    supermarket: ['supermercado','almacen','kiosco','supermarket','grocery'],
+    supermarket: ['supermercado','almacen','supermarket','grocery'],
     hotel: ['hotel','hostel','hostal','alojamiento','hospedaje','dormir'],
     fuel: ['nafta','combustible','estacion de servicio','gas station','petrol'],
     toilets: ['bano','banos','sanitario','toilet','restroom','bathroom','wc'],
@@ -1083,7 +1199,21 @@ const CATEGORY_TAGS = {
     'tourism=hotel':          [['tourism', 'hotel|hostel|guest_house|motel|apartment']],
     'tourism=attraction':     [['tourism', 'attraction|artwork|gallery'], ['historic', 'monument|memorial|building|church|archaeological_site|manor|ruins']],
     'tourism=museum':         [['tourism', 'museum|gallery']],
-    'historic=monument':      [['historic', 'monument|memorial|building|church|archaeological_site|manor|ruins'], ['tourism', 'attraction']]
+    'historic=monument':      [['historic', 'monument|memorial|building|church|archaeological_site|manor|ruins'], ['tourism', 'attraction']],
+    'amenity=bureau_de_change': [['amenity', 'bureau_de_change|money_transfer']],
+    'shop=travel_agency':     [['shop', 'travel_agency'], ['office', 'travel_agent|tourism']],
+    'office=diplomatic':      [['office', 'diplomatic'], ['amenity', 'embassy'], ['diplomatic', 'consulate|embassy|honorary_consulate']],
+    'amenity=dentist':        [['amenity', 'dentist'], ['healthcare', 'dentist']],
+    'shop=optician':          [['shop', 'optician']],
+    'shop=wine':              [['shop', 'wine|alcohol'], ['craft', 'winery']],
+    'leisure=park':           [['leisure', 'park|garden']],
+    'diet=vegetarian':        [['diet:vegetarian', 'yes|only'], ['diet:vegan', 'yes|only']],
+    'diet=gluten_free':       [['diet:gluten_free', 'yes|only']],
+    'shop=tyres':             [['shop', 'tyres']],
+    'shop=car_repair':        [['shop', 'car_repair']],
+    'amenity=veterinary':     [['amenity', 'veterinary']],
+    'shop=kiosk':             [['shop', 'kiosk|convenience|newsagent']],
+    'shop=hardware':          [['shop', 'hardware|doityourself']]
 };
 
 // Nombre en español para cada tipo de lugar (cuando OSM no tiene nombre)
@@ -1098,7 +1228,12 @@ const TYPE_LABELS = {
     attraction: 'Atractivo turístico', monument: 'Monumento', memorial: 'Memorial', viewpoint: 'Mirador',
     gallery: 'Galería', place_of_worship: 'Iglesia / templo', theatre: 'Teatro', artwork: 'Obra de arte',
     building: 'Edificio histórico', church: 'Iglesia', archaeological_site: 'Sitio arqueológico',
-    ruins: 'Ruinas', manor: 'Casona histórica', marketplace: 'Mercado', grave_yard: 'Cementerio'
+    ruins: 'Ruinas', manor: 'Casona histórica', marketplace: 'Mercado', grave_yard: 'Cementerio',
+    bureau_de_change: 'Casa de cambio', money_transfer: 'Envío de dinero', travel_agency: 'Agencia de turismo',
+    travel_agent: 'Agencia de turismo', diplomatic: 'Consulado', embassy: 'Consulado', dentist: 'Dentista',
+    optician: 'Óptica', wine: 'Vinoteca', alcohol: 'Vinoteca', winery: 'Bodega', park: 'Parque', garden: 'Jardín',
+    vegetarian: 'Comida vegetariana', gluten_free: 'Sin TACC', tyres: 'Gomería', car_repair: 'Taller mecánico',
+    veterinary: 'Veterinaria', kiosk: 'Kiosco', newsagent: 'Kiosco', hardware: 'Ferretería', doityourself: 'Ferretería'
 };
 
 const OVERPASS_MIRRORS = [
@@ -1202,7 +1337,7 @@ function toPlace(el, userLat, userLng) {
     const lng = el.lon ?? (el.center && el.center.lon);
     if (lat == null || lng == null) return null;
     const t = el.tags || {};
-    const type = t.amenity || t.healthcare || t.shop || t.tourism || t.vending || t.historic || '';
+    const type = t.amenity || t.healthcare || t.shop || t.tourism || t.office || t.leisure || t.craft || t.vending || t.historic || '';
     const label = TYPE_LABELS[type] || '';
     const calle = t['addr:street'] ? `${t['addr:street']} ${t['addr:housenumber'] || ''}`.trim() : '';
     return {
@@ -1224,7 +1359,17 @@ function formatDistancia(m) {
     if (m == null) return '';
     const dist = m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
     const minPie = Math.max(1, Math.round(m / 80));
-    const tiempo = m <= 2500 ? `${minPie} min a pie` : `${Math.max(1, Math.round(m / 400))} min en auto`;
+    let tiempo;
+    if (m <= 2500) tiempo = `${minPie} min a pie`;
+    else if (m <= 15000) tiempo = `${Math.max(1, Math.round(m / 400))} min en auto`;
+    else {
+        // Ruta: el camino es ~30 % más largo que la línea recta y se va a ~55 km/h por las montañas
+        const min = Math.round((m * 1.3 / 1000) / 55 * 60);
+        if (min < 60) return `${dist} · unos ${Math.max(5, Math.round(min / 5) * 5)} min en auto`;
+        let h = Math.floor(min / 60), r = Math.round((min % 60) / 15) * 15;
+        if (r === 60) { h++; r = 0; }
+        tiempo = `aprox. ${h} h${r ? ` ${r} min` : ''} en auto`;
+    }
     return `${dist} · ${tiempo}`;
 }
 
@@ -1340,6 +1485,8 @@ function leerLista(o, es) {
         titulo = m[1]; items[0] = m[2];
     }
     if (items.length < 2 || !titulo) return null;
+    // En español, una lista de lugares empieza con mayúscula o tiene números (evita partir frases comunes)
+    if (es && items.filter(it => /^[A-ZÁÉÍÓÚÑ0-9"«(]/.test(it) || /\d/.test(it)).length < 2) return null;
     const lugares = items.map(it => partirLugar(it, es));
     // Sin título con dos puntos, exigir que parezcan lugares (con dirección o número)
     if (c <= 0 && lugares.filter(l => l.dir || /\d/.test(l.nombre)).length < 2) return null;
@@ -1469,12 +1616,18 @@ async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {
 
     // En el modo turista no se lee nada en voz alta: solo suena si se toca 🔊
 
+    // Dudas generales (clima, propina, enchufes…): solo la respuesta, sin mapa
+    if (!intent.categoria && !(intent.lugares || []).length) {
+        mapContainer.classList.add('hidden');
+        updateStatus('Respuesta lista. Mostrale la pantalla al turista.');
+        return;
+    }
     mapContainer.classList.remove('hidden');
     renderEmergencyBanner(intent);
 
     const value = intent.categoria && intent.categoria.value;
     const tipoTexto = (TYPE_LABELS[value] || 'lugares').toLowerCase();
-    mapTitle.textContent = userLat ? `${TYPE_LABELS[value] || 'Lugares'} cerca tuyo` : 'Lugares de referencia';
+    mapTitle.textContent = !intent.categoria ? 'Cómo llegar' : userLat ? `${TYPE_LABELS[value] || 'Lugares'} cerca tuyo` : 'Lugares de referencia';
 
     const baseLat = userLat || -24.7883;
     const baseLng = userLng || -65.4106;
