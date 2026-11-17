@@ -470,7 +470,7 @@ let lastVisitorLang = null; // último idioma detectado/elegido del visitante
 // --- Utilidades ---
 function updateStatus(message, isError = false) {
     statusText.textContent = message;
-    statusText.style.color = isError ? '#b91c1c' : '#5a4632';
+    statusText.classList.toggle('error', !!isError);
 }
 
 // Dentro de la app Android hay un puente nativo (voz y micrófono de Android)
@@ -1359,7 +1359,7 @@ async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {
     }
 
     lugares.forEach((l, i) => {
-        const color = l.fuente === 'fijo' ? '#0b3558' : '#b91c1c';
+        const color = l.fuente === 'fijo' ? '#23262B' : '#B3132B';
         const icon = L.divIcon({
             className: 'custom-marker',
             html: `<div class="pin" style="background:${color}">${i + 1}</div>`,
@@ -1876,7 +1876,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Actualizar meta theme-color para la barra del navegador
         const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', tema === 'dark' ? '#1a1a24' : '#0b3558');
+        if (meta) meta.setAttribute('content', tema === 'dark' ? '#7E0E1F' : '#B3132B');
     }
 
     // Tema inicial (el script del <head> ya lo puso, pero aseguramos el ícono)
