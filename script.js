@@ -1699,7 +1699,7 @@ function setupSpeechRecognition() {
     };
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
-        textoEntrada.value = transcript;
+        textoEntrada.value = mayusculaInicial(transcript);
         if (cleanInput(transcript)) {
             updateStatus('Texto capturado. Traduciendo...');
             handleTranslate();
@@ -2109,3 +2109,17 @@ document.addEventListener('DOMContentLoaded', () => {
     ['focus', 'pointerdown'].forEach(ev => textoEntrada.addEventListener(ev, () => warmPosition(), { passive: true }));
     btnHablar.addEventListener('pointerdown', () => warmPosition(), { passive: true });
 })();
+
+// --- Mayúscula al empezar cada oración (al escribir y al dictar) ---
+function mayusculaInicial(t) {
+    return String(t).replace(/(^\s*|[.!?¡¿]\s+|\n\s*)([¡¿"«(]*)(\p{Ll})/gu, (m, a, b, c) => a + b + c.toLocaleUpperCase());
+}
+textoEntrada.addEventListener('input', e => {
+    if (e.isComposing) return;
+    const v = textoEntrada.value, nuevo = mayusculaInicial(v);
+    if (nuevo !== v) {
+        const pos = textoEntrada.selectionStart;
+        textoEntrada.value = nuevo;
+        try { textoEntrada.setSelectionRange(pos, pos); } catch (err) {}
+    }
+});
