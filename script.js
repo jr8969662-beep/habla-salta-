@@ -1207,6 +1207,7 @@ function toPlace(el, userLat, userLng) {
     const calle = t['addr:street'] ? `${t['addr:street']} ${t['addr:housenumber'] || ''}`.trim() : '';
     return {
         nombre: t.name || t.brand || t.operator || label || 'Sin nombre',
+        marca: [t.name, t.brand, t.operator].filter(Boolean).join(' '),
         tipo: label,
         direccion: calle || 'Dirección no disponible',
         lat, lng,
@@ -1373,6 +1374,69 @@ function formatRespuesta(text, lang) {
     }).join('');
 }
 
+
+// ===== Búsqueda de un lugar por su nombre ("Banco Galicia", "Farmacity", "Hotel Sheraton") =====
+const PALABRAS_GENERICAS = new Set(('banco bank banque bancos cajero cajeros atm farmacia farmacias pharmacy hotel hoteles ' +
+    'hostel supermercado super market cafe cafeteria restaurante restaurant bar museo museum iglesia church hospital ' +
+    'clinica sanatorio comisaria policia estacion servicio sucursal central casa centro salta norte sur este oeste plaza ' +
+    'calle avenida san santa santo del los las una uno que donde esta queda hay cerca aqui alla para por con sin como ' +
+    'the where is are near nearest there here closest bank please can find need want ' +
+    'de la el en y a al mas muy necesito quiero busco buscar tienen tiene puedo').split(' '));
+const MARCAS_CONOCIDAS = new Set(('nacion galicia macro santander bbva frances icbc credicoop columbia hipotecario industrial ' +
+    'itau patagonia supervielle ciudad provincia comafi hsbc citi brubank masventas ' +
+    'farmacity ypf shell axion puma carrefour vea changomas damesco libertad coto disco jumbo ' +
+    'mcdonalds burger kentucky mostaza havanna martinez starbucks sheraton hilton alejandro ' +
+    'western rapipago pagofacil correo andreani oca').split(' '));
+
+function tokensNombre(t) {
+    return normText(t || '').split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !PALABRAS_GENERICAS.has(w));
+}
+function terminosBuscados(textos, intent) {
+    const deCategoria = new Set((intent.keywords || []).flatMap(k => normText(k).split(/[^a-z0-9]+/)));
+    const set = new Set();
+    (textos || []).forEach(t => tokensNombre(t).forEach(w => { if (!deCategoria.has(w)) set.add(w); }));
+    return set;
+}
+function coincideNombre(nombre, terminos) {
+    if (!terminos.size) return false;
+    return tokensNombre(nombre).some(w => terminos.has(w) ||
+        [...terminos].some(t => t.length >= 5 && (w.startsWith(t) || t.startsWith(w)) && w.length >= 5));
+}
+// Si cerca no hay ninguno con ese nombre, se busca más lejos solo por nombre
+async function buscarPorNombre(lat, lng, categoria, terminos) {
+    if (!navigator.onLine || !terminos.size) return [];
+    const re = [...terminos].map(t => t.replace(/[^a-z0-9]/g, '')).filter(Boolean).join('|');
+    if (!re) return [];
+    const tags = tagsFor(categoria);
+    const parts = tags.flatMap(([k, v]) => ['name', 'brand', 'operator'].map(n =>
+        `nwr["${k}"~"^(${v})$"]["${n}"~"${re}",i](around:20000,${lat},${lng});`)).join('\n');
+    const els = await overpassQuery(`[out:json][timeout:20];(\n${parts}\n);out center tags 40;`);
+    return (els || []).map(el => toPlace(el, lat, lng)).filter(Boolean).sort((a, b) => a.distancia - b.distancia);
+}
+// En la respuesta escrita: deja arriba los que coinciden y oculta el resto detrás de "Ver todos"
+function enfocarRespuesta(cont, terminos) {
+    if (!terminos.size) return false;
+    let alguno = false;
+    cont.querySelectorAll('.resp-lista').forEach(ul => {
+        if (ul.dataset.enfocado) { alguno = true; return; }
+        ul.dataset.enfocado = '1';
+        const lis = [...ul.children];
+        const si = lis.filter(li => coincideNombre(li.textContent, terminos));
+        if (!si.length) return;
+        alguno = true;
+        si.forEach(li => li.classList.add('resp-destacado'));
+        const no = lis.filter(li => !si.includes(li));
+        if (!no.length) return;
+        no.forEach(li => li.hidden = true);
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn-ver-todos';
+        b.textContent = `Ver los otros ${no.length}`;
+        b.addEventListener('click', () => { no.forEach(li => li.hidden = false); b.remove(); });
+        ul.insertAdjacentElement('afterend', b);
+    });
+    return alguno;
+}
+
 // --- Respuesta de intención con sistema híbrido ---
 async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {}) {
     const hasTarget = targetLang && targetLang !== 'auto' && targetLang !== 'es';
@@ -1391,6 +1455,14 @@ async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {
                 el.innerHTML = `<p class="resp-idioma">Para el turista · ${escapeHtml(nombreIdioma)}</p>${formatRespuesta(t, targetLang)}`;
             } else el.remove();
         }, () => { if (el.isConnected) el.remove(); });
+    }
+    const terminos = opts.sinFiltro ? new Set() : terminosBuscados(opts.textos, intent);
+    enfocarRespuesta(intentResponse.querySelector('.intent-es'), terminos);
+    const tgtBox = intentResponse.querySelector('.intent-target');
+    if (tgtBox && terminos.size) {
+        new MutationObserver((m, obs) => { if (tgtBox.querySelector('.resp-lista')) { obs.disconnect(); enfocarRespuesta(tgtBox, terminos); } })
+            .observe(tgtBox, { childList: true, subtree: true });
+        enfocarRespuesta(tgtBox, terminos);
     }
     intentResponse.classList.remove('hidden');
     if (!opts.keepResult) resultadoDiv.classList.add('hidden');
@@ -1433,8 +1505,39 @@ async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {
         });
     });
 
+    // ¿Pidió un lugar en concreto por su nombre?
+    let filtroNombre = '';
+    mapContainer.querySelectorAll('.aviso-nombre').forEach(e => e.remove());
+    if (terminos.size && intent.categoria) {
+        let elegidos = lugares.filter(l => coincideNombre(`${l.nombre} ${l.marca || ''}`, terminos));
+        if (!elegidos.length && userLat) {
+            updateStatus('Buscando ese nombre en toda la ciudad…');
+            elegidos = (await buscarPorNombre(userLat, userLng, intent.categoria, terminos))
+                .filter(l => coincideNombre(`${l.nombre} ${l.marca || ''}`, terminos));
+        }
+        const marca = [...terminos].find(t => MARCAS_CONOCIDAS.has(t)) || '';
+        if (elegidos.length) {
+            lugares = elegidos;
+            filtroNombre = elegidos[0].nombre;
+        } else if (marca) {
+            const aviso = document.createElement('p');
+            aviso.className = 'aviso-nombre';
+            aviso.innerHTML = `No encontré «${escapeHtml(capital(marca))}» cerca. Te muestro los más cercanos parecidos. ` +
+                `<a href="https://www.google.com/maps/search/${encodeURIComponent((TYPE_LABELS[value] || '') + ' ' + marca)}/@${baseLat},${baseLng},14z" target="_blank" rel="noopener">Buscarlo en Google Maps</a>`;
+            mapTitle.insertAdjacentElement('afterend', aviso);
+        }
+    }
+
     if (userLat) lugares.sort((a, b) => (a.distancia ?? 1e9) - (b.distancia ?? 1e9));
     lugares = lugares.slice(0, 15);
+    if (filtroNombre) {
+        mapTitle.textContent = `${filtroNombre.length < 30 ? filtroNombre : capital([...terminos][0])} · ${lugares.length === 1 ? '1 lugar' : lugares.length + ' lugares'}`;
+        const ver = document.createElement('button');
+        ver.type = 'button'; ver.className = 'btn-ver-todos aviso-nombre';
+        ver.textContent = 'Ver todos los de esta categoría';
+        ver.addEventListener('click', () => showIntentResponse(intent, userLat, userLng, targetLang, { ...opts, sinFiltro: true }));
+        mapTitle.insertAdjacentElement('afterend', ver);
+    }
 
     // 3) Dibujar
     placesList.innerHTML = '';
@@ -1699,7 +1802,7 @@ async function handleTranslate() {
                 updateStatus('Buscando el lugar cerca tuyo...');
                 const pos = await getUserPosition();
                 if (seq !== translateSeq) return;
-                await showIntentResponse(intentYo, pos && pos.lat, pos && pos.lng, target, { keepResult: true });
+                await showIntentResponse(intentYo, pos && pos.lat, pos && pos.lng, target, { keepResult: true, textos: [text] });
             }
         } catch (error) {
             if (seq !== translateSeq) return;
@@ -1764,7 +1867,7 @@ async function handleTranslate() {
         const pos = await getUserPosition();
         if (seq !== translateSeq) return;
         if (!pos) updateStatus('Sin ubicación. Mostrando lugares de referencia.', true);
-        await showIntentResponse(intent, pos && pos.lat, pos && pos.lng, targetForReply);
+        await showIntentResponse(intent, pos && pos.lat, pos && pos.lng, targetForReply, { textos: [textoEs, text] });
     } else {
         const origen = visitorLang ? langName(visitorLang).toUpperCase() : 'DETECTADO';
         showResult(textoEs, 'es', `${origen} → ESPAÑOL`);

@@ -937,3 +937,12 @@ a.resp-tel { color: var(--azul-claro); font-weight: 600; text-decoration: none; 
 .resp-nota + .resp-lista { margin-top: 6px; }
 .resp-lista li { padding: 7px 0; }
 .intent-target .resp-nombre { font-weight: 500; font-size: .93rem; }
+
+/* --- Lugar buscado por nombre --- */
+.resp-lista li.resp-destacado .resp-nombre { color: var(--rojo); }
+.resp-lista li[hidden] { display: none; }
+.btn-ver-todos { margin-top: 6px; align-self: flex-start; background: none; border: 1px solid var(--borde);
+    border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: .85rem; color: var(--azul-oscuro); cursor: pointer; }
+.map-container .btn-ver-todos { margin: -4px 0 10px; }
+.aviso-nombre:not(button) { margin: -4px 0 10px; font-size: .9rem; color: var(--gris-texto); }
+.aviso-nombre a { color: var(--azul-claro); font-weight: 600; }
