@@ -630,20 +630,31 @@ const translationCache = (() => {
     };
 })();
 
-// Proveedor 1: Google Translate (endpoint público gtx)
+// Proveedor 1: Google Translate (endpoint público). Si falla, reintenta una vez con otro cliente.
+async function googleOnce(part, from, to, client, ms) {
+    const url = `https://translate.googleapis.com/translate_a/single?client=${client}&dt=t`
+        + `&sl=${apiCode(from)}&tl=${apiCode(to)}&q=${encodeURIComponent(part)}`;
+    const res = await fetchWithTimeout(url, ms);
+    if (!res.ok) throw new Error(`Google ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data) || !Array.isArray(data[0])) throw new Error('Respuesta inválida de Google');
+    return { text: data[0].map(seg => (seg && seg[0]) || '').join(''), detected: data[2] || null };
+}
 async function translateWithGoogle(text, from, to) {
     const parts = splitText(text, 1800);
     let out = '';
     let detected = null;
     for (const part of parts) {
-        const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t'
-            + `&sl=${apiCode(from)}&tl=${apiCode(to)}&q=${encodeURIComponent(part)}`;
-        const res = await fetchWithTimeout(url);
-        if (!res.ok) throw new Error(`Google ${res.status}`);
-        const data = await res.json();
-        if (!Array.isArray(data) || !Array.isArray(data[0])) throw new Error('Respuesta inválida de Google');
-        out += data[0].map(seg => seg[0] || '').join('');
-        if (!detected && data[2]) detected = data[2];
+        let r;
+        try {
+            r = await googleOnce(part, from, to, 'gtx', 7000);
+        } catch (e) {
+            if (!navigator.onLine) throw e;
+            await new Promise(ok => setTimeout(ok, 500));
+            r = await googleOnce(part, from, to, 'dict-chrome-ex', 7000);
+        }
+        out += r.text;
+        if (!detected && r.detected) detected = r.detected;
     }
     if (!out.trim()) throw new Error('Traducción vacía');
     return { text: out, detected: normalizeLang(detected) || (from !== 'auto' ? from : null), provider: 'google' };
@@ -671,6 +682,86 @@ async function translateWithMyMemory(text, from, to) {
     return { text: out.join(' '), detected: normalizeLang(detected) || (from !== 'auto' ? from : null), provider: 'mymemory' };
 }
 
+// --- Precisión ---
+// Limpia lo dictado o pegado: espacios dobles, caracteres invisibles, comillas raras
+function cleanInput(text) {
+    return String(text)
+        .replace(/[​-‍﻿]/g, '')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\s*\n\s*/g, '\n')
+        .replace(/\s+([,.;:!?])/g, '$1')
+        .trim();
+}
+
+// Palabras de Salta / Argentina que los traductores entienden mal -> español neutro
+const MODISMOS = [
+    [/\bbondis?\b/gi, m => /s$/i.test(m) ? 'autobuses' : 'autobús'],
+    [/\bcolectivos\b/gi, 'autobuses'], [/\bcolectivo\b/gi, 'autobús'],
+    [/\bremises\b/gi, 'taxis'], [/\bremis\b/gi, 'taxi'],
+    [/\bnafta\b/gi, 'gasolina'], [/\bestaci[oó]n de servicio\b/gi, 'gasolinera'],
+    [/\b(poca|mucha) plata\b/gi, (m, q) => (q.toLowerCase() === 'poca' ? 'poco' : 'mucho') + ' dinero'],
+    [/\bplata\b(?! (y|o) oro)/gi, 'dinero'],
+    [/\bcelu\b/gi, 'celular'], [/\bboliches\b/gi, 'discotecas'], [/\bboliche\b/gi, 'discoteca'],
+    [/\bchangos\b/gi, 'chicos'], [/\bchango\b/gi, 'chico'], [/\bpibes\b/gi, 'chicos'], [/\bpibe\b/gi, 'chico'],
+    [/\blaburo\b/gi, 'trabajo'], [/\bheladera\b/gi, 'refrigerador'],
+    [/\bfrutillas\b/gi, 'fresas'], [/\bfrutilla\b/gi, 'fresa'], [/\bpaltas\b/gi, 'aguacates'], [/\bpalta\b/gi, 'aguacate'],
+    [/\bpochoclos?\b/gi, 'palomitas de maíz'], [/\bmanteca\b/gi, 'mantequilla'],
+    [/^\s*che,?\s*/i, ''], [/,?\s*\bche\b\s*([,.!?]|$)/gi, '$1'],
+    [/\bre (lind|linda|lindo|cerca|lejos|rico|rica|caro|cara|barato|barata|bueno|buena|f[aá]cil|dif[ií]cil|bien|tranqui)/gi, 'muy $1'],
+    [/\btranqui\b/gi, 'tranquilo'], [/\bok[eé]y?\b/gi, 'de acuerdo'],
+    [/\bal toque\b/gi, 'enseguida'], [/\bahorita\b/gi, 'ahora'],
+    [/\bdale\b/gi, 'de acuerdo'], [/\bjoya\b/gi, 'perfecto'], [/\bbárbaro\b/gi, 'excelente']
+];
+function neutralizarModismos(text) {
+    let t = text;
+    for (const [re, rep] of MODISMOS) t = t.replace(re, rep);
+    return t.replace(/\s{2,}/g, ' ').replace(/^\s*([,.])\s*/, '').trim() || text;
+}
+
+// Nombres propios que el traductor confunde con palabras comunes ("Salta" -> "salta/jumps")
+const NOMBRES_PROTEGIDOS = [
+    'Quebrada de las Conchas', 'Tren a las Nubes', 'Rosario de Lerma', 'Campo Quijano', 'Tres Cerritos',
+    'La Caldera', 'La Merced', 'La Viña', 'El Carril', 'San Lorenzo', 'Vaqueros', 'Cerrillos', 'Caseros',
+    'Salta', 'Cafayate', 'Cachi', 'Iruya', 'Humahuaca', 'Purmamarca', 'Tilcara', 'Güemes', 'Chicoana', 'MAAM'
+];
+function protegerNombres(text) {
+    const guardados = [];
+    let t = text;
+    NOMBRES_PROTEGIDOS.forEach(nombre => {
+        const re = new RegExp(`(^|[^\\p{L}])(${nombre})(?![\\p{L}])`, 'gu');
+        t = t.replace(re, (m, pre, n) => { guardados.push(n); return `${pre}[[${guardados.length - 1}]]`; });
+    });
+    return { text: t, guardados };
+}
+function restaurarNombres(text, guardados) {
+    let usados = 0;
+    const out = text.replace(/[\[［【]\s*[\[［【]\s*(\d+)\s*[\]］】]\s*[\]］】]/g, (m, i) => {
+        if (guardados[+i] === undefined) return m;
+        usados++;
+        return guardados[+i];
+    });
+    return usados === guardados.length ? out : null;   // si el traductor rompió alguna marca, no sirve
+}
+
+function limpiarSalida(text, to) {
+    let t = String(text).replace(/\s+([,.;:!?])/g, '$1').replace(/ {2,}/g, ' ').trim();
+    if (to === 'es') t = t.replace(/([¿¡])\s+/g, '$1');
+    return t;
+}
+
+async function runProviders(providers, text, from, to) {
+    let lastError;
+    for (const provider of providers) {
+        try {
+            return await provider(text, from, to);
+        } catch (e) {
+            console.warn(`Falló ${provider.name}:`, e);
+            lastError = e;
+        }
+    }
+    throw lastError || new Error('sin proveedores');
+}
+
 /**
  * Traduce y devuelve { text, detected, provider }.
  * from puede ser 'auto'. Prueba cada proveedor en orden hasta que uno funcione.
@@ -678,46 +769,72 @@ async function translateWithMyMemory(text, from, to) {
 async function translateFull(text, from, to) {
     from = normalizeLang(from === 'Autodetect' ? 'auto' : from) || 'auto';
     to = normalizeLang(to);
-    if (!text.trim()) return { text: '', detected: from, provider: 'none' };
+    text = cleanInput(text);
+    if (!text) return { text: '', detected: from, provider: 'none' };
     if (from === to) return { text, detected: from, provider: 'none' };
 
     const key = `${from}|${to}|${text}`;
     const cached = translationCache.get(key);
     if (cached) return { ...cached, provider: 'cache' };
 
-    const providers = [translateWithGoogle, translateWithMyMemory];
+    // Lo que dice el salteño: modismos a español neutro y nombres propios protegidos
+    let entrada = text, guardados = [];
+    if (from === 'es') {
+        entrada = neutralizarModismos(text);
+        const p = protegerNombres(entrada);
+        entrada = p.text; guardados = p.guardados;
+    }
 
+    const providers = [];
     if (!navigator.onLine) {
         if (!NATIVE_OFFLINE) throw new Error('Sin internet no se puede traducir texto nuevo. Usá el historial o lo ya traducido.');
-        try {
-            const result = await translateWithNative(text, from, to);
-            translationCache.set(key, { text: result.text, detected: result.detected });
-            return result;
-        } catch (e) {
-            throw new Error(nativeErrorMessage(e));
+        providers.push(translateWithNative);
+    } else {
+        providers.push(translateWithGoogle, translateWithMyMemory);
+        // Con conexión floja: si Google y MyMemory fallan, probar con el traductor del teléfono
+        if (NATIVE_OFFLINE) providers.push(translateWithNative);
+    }
+
+    let result;
+    try {
+        result = await runProviders(providers, entrada, from, to);
+        if (guardados.length) {
+            const restaurado = restaurarNombres(result.text, guardados);
+            if (restaurado !== null) result.text = restaurado;
+            else {   // el traductor rompió las marcas: se traduce sin protegerlas
+                const sinMarcas = neutralizarModismos(text);
+                result = await runProviders(providers, sinMarcas, from, to);
+            }
         }
-    }
-    // Con conexión floja: si Google y MyMemory fallan, probar con el traductor del teléfono
-    if (NATIVE_OFFLINE) providers.push(translateWithNative);
-    let lastError;
-    for (const provider of providers) {
-        try {
-            const result = await provider(text, from, to);
-            // Si el texto ya estaba en el idioma destino, no hace falta traducir
-            if (result.detected === to) result.text = text;
-            translationCache.set(key, { text: result.text, detected: result.detected });
-            return result;
-        } catch (e) {
-            console.warn(`Falló ${provider.name}:`, e);
-            lastError = e;
+    } catch (lastError) {
+        const msg = String((lastError && lastError.message) || '');
+        if (!navigator.onLine || (NATIVE_OFFLINE && /unsupported|model-missing|timeout/.test(msg))) {
+            throw new Error(NATIVE_OFFLINE ? nativeErrorMessage(lastError) : msg);
         }
+        throw new Error(lastError && lastError.name === 'AbortError'
+            ? 'El traductor tardó demasiado (señal floja). Tocá "Reintentar".'
+            : 'El traductor no respondió. Revisá la conexión y tocá "Reintentar".');
     }
-    if (NATIVE_OFFLINE && lastError && /unsupported|model-missing/.test(lastError.message)) {
-        throw new Error(nativeErrorMessage(lastError));
+
+    // Si el texto ya estaba en el idioma destino, no hace falta traducir
+    if (result.detected === to) result.text = text;
+    result.text = limpiarSalida(result.text, to);
+    // No guardar en caché algo que volvió igual sin traducir (suele ser una falla del servicio)
+    const sinCambio = result.text.trim().toLowerCase() === text.trim().toLowerCase() && result.detected !== to;
+    if (!(sinCambio && text.split(/\s+/).length > 3)) {
+        translationCache.set(key, { text: result.text, detected: result.detected });
     }
-    throw new Error(lastError && lastError.name === 'AbortError'
-        ? 'El servicio de traducción tardó demasiado. Probá de nuevo.'
-        : 'No se pudo traducir ahora. Revisá tu conexión e intentá de nuevo.');
+    return result;
+}
+
+// Parecido entre dos frases en español (0 a 1), para la comprobación de ida y vuelta
+function parecido(a, b) {
+    const pal = t => new Set(normText(t).split(/[^a-z0-9ñ]+/).filter(w => w.length > 2));
+    const A = pal(a), B = pal(b);
+    if (!A.size || !B.size) return 1;
+    let comunes = 0;
+    A.forEach(w => { if (B.has(w)) comunes++; });
+    return comunes / Math.min(A.size, B.size);
 }
 
 // Compatibilidad: devuelve solo el texto
@@ -1353,17 +1470,75 @@ function setupSpeechRecognition() {
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         textoEntrada.value = transcript;
-        updateStatus('Texto capturado. Presioná "Traducir ahora".');
+        if (cleanInput(transcript)) {
+            updateStatus('Texto capturado. Traduciendo...');
+            handleTranslate();
+        } else {
+            updateStatus('No se entendió. Intentá de nuevo.', true);
+        }
     };
 }
 
 // --- Flujo principal ---
+let translateSeq = 0;
+
+function showRetry(label, fn) {
+    let b = document.getElementById('btn-reintentar');
+    if (!b) {
+        b = document.createElement('button');
+        b.id = 'btn-reintentar';
+        b.type = 'button';
+        b.className = 'btn-reintentar';
+        statusText.insertAdjacentElement('afterend', b);
+    }
+    b.textContent = label;
+    b.onclick = () => { hideRetry(); fn(); };
+    b.hidden = false;
+}
+function hideRetry() {
+    const b = document.getElementById('btn-reintentar');
+    if (b) b.hidden = true;
+}
+
+function setCheck(html, warn) {
+    let el = document.getElementById('comprobacion');
+    if (!el) {
+        el = document.createElement('p');
+        el.id = 'comprobacion';
+        el.className = 'comprobacion';
+        translationResult.insertAdjacentElement('afterend', el);
+    }
+    el.innerHTML = html || '';
+    el.classList.toggle('warn', !!warn);
+    el.hidden = !html;
+}
+
+// Traduce de vuelta al español para que veas qué va a entender el turista
+async function comprobarTraduccion(original, traducido, target, seq) {
+    setCheck('<span class="comp-cargando">Comprobando la traducción…</span>');
+    try {
+        const vuelta = await translateFull(traducido, target, 'es');
+        if (seq !== translateSeq) return;
+        const p = parecido(original, vuelta.text);
+        if (p >= 0.5) {
+            setCheck(`✔ El turista va a entender: «${escapeHtml(vuelta.text)}»`);
+        } else {
+            setCheck(`⚠️ Puede que no se entienda bien. Vuelto al español dice: «${escapeHtml(vuelta.text)}». Probá decirlo con palabras más simples.`, true);
+        }
+    } catch (e) {
+        if (seq === translateSeq) setCheck('');
+    }
+}
+
 async function handleTranslate() {
-    const text = textoEntrada.value.trim();
+    const text = cleanInput(textoEntrada.value);
     if (!text) {
         updateStatus('Escribí o dictá algo primero.', true);
         return;
     }
+    const seq = ++translateSeq;
+    hideRetry();
+    setCheck('');
 
     const langCode = idiomaSelect.value;
 
@@ -1375,27 +1550,35 @@ async function handleTranslate() {
     if (direction === 'fromEs') {
         const target = langCode !== 'auto' ? langCode : lastVisitorLang;
         if (!target) {
-            updateStatus('Elegí el idioma del visitante (o traducí primero algo que él diga).', true);
+            updateStatus('Elegí arriba el idioma del turista (o traducí primero algo que él diga).', true);
+            idiomaSelect.focus();
             return;
         }
         updateStatus('Traduciendo...');
         btnTraducir.disabled = true;
         try {
             const r = await translateFull(text, 'es', target);
+            if (seq !== translateSeq) return;
             showResult(r.text, target, `ESPAÑOL → ${langName(target).toUpperCase()}`);
             speak(r.text, speechCode(target));
-            updateStatus('Traducción lista. Mostrale la pantalla o tocá 🔊.');
+            updateStatus(r.provider === 'android'
+                ? 'Traducido sin internet. Mostrale la pantalla o tocá 🔊.'
+                : 'Traducción lista. Mostrale la pantalla o tocá 🔊.');
+            if (navigator.onLine && r.provider !== 'android') comprobarTraduccion(text, r.text, target, seq);
             // Si lo que escribiste es un lugar (catedral, museo, hospital…), muestra el mapa y la reseña
             const intentYo = detectIntent(text);
             if (intentYo) {
                 updateStatus('Buscando el lugar cerca tuyo...');
                 const pos = await getUserPosition();
+                if (seq !== translateSeq) return;
                 await showIntentResponse(intentYo, pos && pos.lat, pos && pos.lng, target, { keepResult: true });
             }
         } catch (error) {
+            if (seq !== translateSeq) return;
             updateStatus(error.message, true);
+            showRetry('🔁 Reintentar', handleTranslate);
         } finally {
-            btnTraducir.disabled = false;
+            if (seq === translateSeq) btnTraducir.disabled = false;
         }
         return;
     }
@@ -1403,37 +1586,63 @@ async function handleTranslate() {
     // --- Modo normal: idioma del visitante -> español ---
     updateStatus('Traduciendo...');
     btnTraducir.disabled = true;
-    let textoEs, detected;
+    let r, aviso = '';
     try {
-        const r = await translateFull(text, langCode, 'es');
-        textoEs = r.text;
-        detected = r.detected;
+        // Se detecta el idioma real aunque esté elegido otro (el turista puede hablar otro idioma)
+        // (quechua, aimara y guaraní no se detectan bien, y sin internet se respeta lo elegido)
+        const detectar = langCode === 'auto' || (navigator.onLine && !['qu', 'ay', 'gn'].includes(langCode));
+        r = await translateFull(text, detectar ? 'auto' : langCode, 'es');
+        const palabras = text.split(/\s+/).length;
+        if (langCode !== 'auto' && r.detected && r.detected !== langCode) {
+            if (r.detected === 'es' && palabras >= 3) {
+                if (seq !== translateSeq) return;
+                updateStatus('Esto ya está en español. ¿Se lo querés decir al turista?', true);
+                showRetry('🙋 Sí, traducírselo a él', () => {
+                    setDirection('fromEs');
+                    textoEntrada.value = text;
+                    handleTranslate();
+                });
+                return;
+            } else if (palabras >= 3 && CONFIG.languages[r.detected]) {
+                aviso = `Parece ${langName(r.detected).toLowerCase()}, no ${langName(langCode).toLowerCase()}: cambié el idioma.`;
+                idiomaSelect.value = r.detected;
+                idiomaSelect.dispatchEvent(new Event('change'));
+            } else {
+                // Frase corta: la detección no es segura, se respeta el idioma elegido
+                r = await translateFull(text, langCode, 'es');
+            }
+        }
     } catch (error) {
+        if (seq !== translateSeq) return;
         console.error('Error en la traducción:', error);
         updateStatus(error.message, true);
+        showRetry('🔁 Reintentar', handleTranslate);
         return;
     } finally {
-        btnTraducir.disabled = false;
+        if (seq === translateSeq) btnTraducir.disabled = false;
     }
+    if (seq !== translateSeq) return;
+    const textoEs = r.text, detected = r.detected;
 
     // Idioma real del visitante: el elegido o el detectado
-    const visitorLang = langCode !== 'auto' ? langCode : detected;
+    const visitorLang = idiomaSelect.value !== 'auto' ? idiomaSelect.value : detected;
     if (visitorLang && visitorLang !== 'es') lastVisitorLang = visitorLang;
 
     const intent = detectIntent(textoEs, text);
     const targetForReply = visitorLang && visitorLang !== 'es' ? visitorLang : null;
 
     if (intent) {
-        updateStatus('Obteniendo tu ubicación...');
+        updateStatus(aviso || 'Obteniendo tu ubicación...', !!aviso);
         const pos = await getUserPosition();
+        if (seq !== translateSeq) return;
         if (!pos) updateStatus('Sin ubicación. Mostrando lugares de referencia.', true);
         await showIntentResponse(intent, pos && pos.lat, pos && pos.lng, targetForReply);
     } else {
         const origen = visitorLang ? langName(visitorLang).toUpperCase() : 'DETECTADO';
         showResult(textoEs, 'es', `${origen} → ESPAÑOL`);
-        updateStatus(langCode === 'auto' && detected
+        updateStatus(aviso || (langCode === 'auto' && detected
             ? `Idioma detectado: ${langName(detected)}.`
-            : 'Traducción completada.');
+            : (r.provider === 'android' ? 'Traducido sin internet.' : 'Traducción completada.')), !!aviso);
     }
 }
 
@@ -1489,6 +1698,8 @@ textoEntrada.addEventListener('keydown', (e) => {
 function setDirection(dir) {
     if (direction === dir) return;
     direction = dir;
+    if (typeof setCheck === 'function') setCheck('');
+    hideRetry();
     textoEntrada.value = '';
     resultadoDiv.classList.add('hidden');
     intentResponse.classList.add('hidden');
@@ -1591,6 +1802,7 @@ function renderHistory() {
             <span class="h-trad" dir="auto">${escapeHtml(h.text)}</span>`;
         li.addEventListener('click', () => {
             translationResult.textContent = h.text;
+            setCheck('');
             translationResult.dataset.lang = h.lang;
             translationResult.dir = (CONFIG.languages[h.lang] && CONFIG.languages[h.lang].rtl) ? 'rtl' : 'ltr';
             resultLabel.textContent = h.label || 'TRADUCCIÓN';
