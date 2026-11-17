@@ -647,11 +647,10 @@ async function translateWithGoogle(text, from, to) {
     for (const part of parts) {
         let r;
         try {
-            r = await googleOnce(part, from, to, 'gtx', 7000);
+            r = await googleOnce(part, from, to, 'gtx', 6000);
         } catch (e) {
-            if (!navigator.onLine) throw e;
-            await new Promise(ok => setTimeout(ok, 500));
-            r = await googleOnce(part, from, to, 'dict-chrome-ex', 7000);
+            if (!navigator.onLine || e.name === 'AbortError') throw e;   // tardó: ya están corriendo los respaldos
+            r = await googleOnce(part, from, to, 'dict-chrome-ex', 5000);
         }
         out += r.text;
         if (!detected && r.detected) detected = r.detected;
@@ -669,7 +668,7 @@ async function translateWithMyMemory(text, from, to) {
     let detected = null;
     for (const part of parts) {
         const url = `${CONFIG.translationApi}?q=${encodeURIComponent(part)}&langpair=${src}|${tgt}`;
-        const res = await fetchWithTimeout(url);
+        const res = await fetchWithTimeout(url, 6000);
         if (!res.ok) throw new Error(`MyMemory ${res.status}`);
         const data = await res.json();
         const t = data.responseData && data.responseData.translatedText;
@@ -749,17 +748,35 @@ function limpiarSalida(text, to) {
     return t;
 }
 
-async function runProviders(providers, text, from, to) {
-    let lastError;
-    for (const provider of providers) {
-        try {
-            return await provider(text, from, to);
-        } catch (e) {
-            console.warn(`Falló ${provider.name}:`, e);
-            lastError = e;
-        }
-    }
-    throw lastError || new Error('sin proveedores');
+// Arranca con el primer proveedor; si tarda, larga el siguiente en paralelo y se queda con el primero que responda
+const HEDGE_DELAYS = { translateWithGoogle: 0, translateWithNative: 1300, translateWithMyMemory: 1800 };
+function runProviders(providers, text, from, to) {
+    return new Promise((resolve, reject) => {
+        let pendientes = providers.length, terminado = false, lastError = null;
+        const timers = [];
+        const lanzar = (provider) => {
+            if (terminado || provider.__lanzado) return;
+            provider.__lanzado = true;
+            provider(text, from, to).then(r => {
+                if (terminado) return;
+                terminado = true;
+                timers.forEach(clearTimeout);
+                resolve(r);
+            }, e => {
+                console.warn(`Falló ${provider.name}:`, e);
+                lastError = e;
+                if (--pendientes === 0 && !terminado) { terminado = true; reject(lastError); return; }
+                // si uno falla, no esperar: largar el siguiente ya
+                const sig = providers.find(p => !p.__lanzado);
+                if (sig) lanzar(sig);
+            });
+        };
+        providers = providers.map(f => { const w = (...a) => f(...a); Object.defineProperty(w, 'name', { value: f.name }); return w; });
+        providers.forEach((p, i) => {
+            const d = i === 0 ? 0 : (HEDGE_DELAYS[p.name] != null ? HEDGE_DELAYS[p.name] : 1500 * i);
+            if (d === 0) lanzar(p); else timers.push(setTimeout(() => lanzar(p), d));
+        });
+    });
 }
 
 /**
@@ -1217,20 +1234,37 @@ function linkComoLlegar(p) {
 
 // --- Ubicación del usuario ---
 let lastPosition = null;
+function savePos(pos) {
+    lastPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude,
+                     precision: pos.coords.accuracy, t: Date.now() };
+    return lastPosition;
+}
+// Pide la ubicación en segundo plano (al abrir la app, al tocar el texto o el micrófono)
+let gpsPidiendo = null;
+function warmPosition() {
+    if (!navigator.geolocation || gpsPidiendo) return gpsPidiendo;
+    if (lastPosition && Date.now() - lastPosition.t < 60000) return Promise.resolve(lastPosition);
+    gpsPidiendo = new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+            pos => resolve(savePos(pos)),
+            () => resolve(null),
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+    }).finally(() => { setTimeout(() => { gpsPidiendo = null; }, 0); });
+    return gpsPidiendo;
+}
 function getUserPosition() {
     return new Promise(resolve => {
         if (!navigator.geolocation) return resolve(null);
-        // Si tenemos una ubicación de hace menos de 2 minutos, se reutiliza al instante
+        // Ubicación reciente: al instante (y se refresca en segundo plano)
         if (lastPosition && Date.now() - lastPosition.t < 120000) return resolve(lastPosition);
-        navigator.geolocation.getCurrentPosition(
-            pos => {
-                lastPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude,
-                                 precision: pos.coords.accuracy, t: Date.now() };
-                resolve(lastPosition);
-            },
-            err => { console.warn('Geolocalización:', err); resolve(null); },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-        );
+        if (lastPosition && Date.now() - lastPosition.t < 600000) { warmPosition(); return resolve(lastPosition); }
+        let listo = false;
+        const fin = v => { if (!listo) { listo = true; resolve(v); } };
+        // Rápida (red/wifi) y precisa (GPS) a la vez: gana la primera
+        navigator.geolocation.getCurrentPosition(pos => fin(savePos(pos)), () => {},
+            { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 });
+        (warmPosition() || Promise.resolve(null)).then(p => { if (p) fin(p); });
+        setTimeout(() => fin(lastPosition || null), 6000);
     });
 }
 
@@ -1247,24 +1281,21 @@ function distanciaMetros(lat1, lng1, lat2, lng2) {
 
 // --- Respuesta de intención con sistema híbrido ---
 async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {}) {
-    let respuestaTarget = intent.respuesta_es;
     const hasTarget = targetLang && targetLang !== 'auto' && targetLang !== 'es';
-
-    if (hasTarget && intent['respuesta_' + targetLang]) {
-        respuestaTarget = intent['respuesta_' + targetLang];
-    } else if (hasTarget) {
-        try {
-            respuestaTarget = await translateText(intent.respuesta_es, 'es', targetLang);
-        } catch (e) {
-            console.warn('No se pudo traducir la respuesta:', e);
-        }
-    }
-
+    const fija = hasTarget && intent['respuesta_' + targetLang];
     intentResponse.innerHTML = `
         <p class="intent-es">${escapeHtml(intent.respuesta_es)}</p>
-        ${hasTarget && respuestaTarget !== intent.respuesta_es
-            ? `<p class="intent-target" lang="${targetLang}">${escapeHtml(respuestaTarget)}</p>` : ''}
+        ${fija ? `<p class="intent-target" lang="${targetLang}">${escapeHtml(fija)}</p>`
+               : hasTarget ? `<p class="intent-target cargando-txt" lang="${targetLang}">…</p>` : ''}
     `;
+    if (hasTarget && !fija) {
+        const el = intentResponse.querySelector('.intent-target');
+        translateText(intent.respuesta_es, 'es', targetLang).then(t => {
+            if (!el.isConnected) return;
+            if (t && t !== intent.respuesta_es) { el.textContent = t; el.classList.remove('cargando-txt'); }
+            else el.remove();
+        }, () => { if (el.isConnected) el.remove(); });
+    }
     intentResponse.classList.remove('hidden');
     if (!opts.keepResult) resultadoDiv.classList.add('hidden');
 
@@ -1539,6 +1570,7 @@ async function handleTranslate() {
     const seq = ++translateSeq;
     hideRetry();
     setCheck('');
+    warmPosition();   // la ubicación se va buscando mientras se traduce
 
     const langCode = idiomaSelect.value;
 
@@ -1863,4 +1895,18 @@ document.addEventListener('DOMContentLoaded', () => {
             aplicarTema(e.matches ? 'dark' : 'light');
         }
     });
+})();
+
+// --- Arranque rápido: abre la conexión con el traductor y busca la ubicación antes de que se necesite ---
+(function precalentar() {
+    const ping = () => { if (navigator.onLine) googleOnce('hola', 'es', 'en', 'gtx', 4000).catch(() => {}); };
+    setTimeout(ping, 1500);
+    window.addEventListener('online', ping);
+    try {
+        if (navigator.permissions) {
+            navigator.permissions.query({ name: 'geolocation' }).then(p => { if (p.state === 'granted') warmPosition(); }).catch(() => {});
+        }
+    } catch (e) {}
+    ['focus', 'pointerdown'].forEach(ev => textoEntrada.addEventListener(ev, () => warmPosition(), { passive: true }));
+    btnHablar.addEventListener('pointerdown', () => warmPosition(), { passive: true });
 })();

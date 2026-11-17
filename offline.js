@@ -104,7 +104,7 @@ function waitOnline() {
     });
 }
 
-async function fetchWithTimeout(url, ms, opts = {}) {
+async function dlFetch(url, ms, opts = {}) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), ms);
     try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
@@ -126,7 +126,7 @@ async function fetchInBatches(urls, cache, onStep, concurrency = 8) {
             for (let intento = 0; intento < 3 && !done && downloading; intento++) {
                 try {
                     if (await cache.match(url)) { done = true; break; }
-                    const res = await fetchWithTimeout(url, 15000, { mode: 'cors' });
+                    const res = await dlFetch(url, 15000, { mode: 'cors' });
                     if (!res.ok) throw new Error(res.status);
                     await cache.put(url, res);
                     done = true;
@@ -157,7 +157,7 @@ async function overpassOneByOne(query, desfase = 0) {
         if (!downloading) return null;
         await waitOnline();
         try {
-            const res = await fetchWithTimeout(url, 45000, {
+            const res = await dlFetch(url, 45000, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'data=' + encodeURIComponent(query)

@@ -708,3 +708,6 @@ footer .aviso { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
 [data-theme="dark"] .comprobacion.warn { background: #78350f; color: #fde68a; }
 .btn-reintentar { margin-top: 6px; padding: 8px 14px; border-radius: 10px; border: none; cursor: pointer;
     background: var(--azul-oscuro); color: #fff; font-weight: 700; font-size: .9rem; }
+
+.cargando-txt { opacity: .55; animation: parpadeo 1s ease-in-out infinite alternate; }
+@keyframes parpadeo { to { opacity: .25; } }
