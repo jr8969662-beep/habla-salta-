@@ -212,7 +212,7 @@ async function downloadPlaces(onProgress) {
     const KEEP = ['name', 'brand', 'operator', 'amenity', 'healthcare', 'shop', 'tourism', 'vending',
                   'atm', 'emergency', 'addr:street', 'addr:housenumber', 'phone', 'contact:phone',
                   'opening_hours', 'aerialway', 'aeroway', 'railway', 'historic', 'leisure', 'wikipedia', 'wikidata',
-                  'office', 'diplomatic', 'craft', 'diet:vegetarian', 'diet:vegan', 'diet:gluten_free'];
+                  'office', 'diplomatic', 'craft', 'highway', 'public_transport', 'diet:vegetarian', 'diet:vegan', 'diet:gluten_free'];
     const compact = elements.map(el => {
         const lat = el.lat ?? (el.center && el.center.lat);
         const lon = el.lon ?? (el.center && el.center.lon);

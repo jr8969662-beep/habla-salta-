@@ -41,7 +41,7 @@ const CONFIG = {
 // --- Intenciones con direcciones reales y coordenadas de Salta ---
 const INTENTS = [
     // ==== TRANSPORTE Y TARJETAS ====
-    { keywords: ['saeta','tarjeta','cargar','colectivo','recarga','top up'],
+    { keywords: ['saeta','tarjeta saeta','cargar la tarjeta','cargar tarjeta','recargar','recarga','top up','sube'],
       respuesta_es: 'Podés cargar la tarjeta SAETA en los Centros de Atención al Usuario de Pellegrini 824 o en el Paseo Salta (ex Hiper Libertad), local 2020, 1er piso. También hay cajeros de recarga en San Martín y Buenos Aires, y en la peatonal Florida entre San Martín y Urquiza, disponibles 24 hs.',
       respuesta_en: 'You can top up the SAETA card at the Customer Service Centers at Pellegrini 824 or Paseo Salta (ex Hiper Libertad), unit 2020, 1st floor. There are also top-up machines at San Martín & Buenos Aires, and on Florida pedestrian street between San Martín and Urquiza, available 24/7.',
       respuesta_pt: 'Você pode recarregar o cartão SAETA nos Centros de Atendimento ao Usuário na Pellegrini 824 ou no Paseo Salta (ex Hiper Libertad), loja 2020, 1º andar. Também há caixas de recarga em San Martín e Buenos Aires, e na rua de pedestres Florida entre San Martín e Urquiza, disponíveis 24h.',
@@ -53,19 +53,23 @@ const INTENTS = [
         { nombre: 'Cajero SAETA 24hs', direccion: 'Peatonal Florida entre San Martín y Urquiza', lat: -24.7875, lng: -65.4100 }
       ] },
 
-    { keywords: ['taxi','remis','uber','cabify','transporte'],
-      respuesta_es: 'Paradas de taxi en Plaza 9 de Julio, Terminal de Ómnibus y Aeropuerto. Remises: Remis del Norte (0387 431-3000), Radio Taxi Salta (0387 431-5555). Uber y Cabify funcionan en la ciudad.',
-      categoria: { key: 'amenity', value: 'taxi' } },
+    { keywords: ['taxi','taxis','remis','remises','parada de taxi','paradas de taxi','donde tomo un taxi','dónde tomo un taxi','pedir un taxi','llamar un taxi','uber','cabify','taxi stand','where can i get a taxi','call a taxi','cab'],
+      respuesta_es: 'Los taxis se toman en la calle o en las paradas de taxi: hay muchas en el centro, alrededor de la Plaza 9 de Julio, y en la Terminal de Ómnibus. Usan taxímetro, con tarifa más cara de noche, los domingos y feriados. Los remises cobran precio fijo: preguntá cuánto sale antes de subir. En el Aeropuerto hay mostradores de taxis y remises con tarifa fija al centro (Taxitel 0387 423-2314, Remis Nuevo San Nicolás 0387 648-2000, Remis Golden 0387 495-3723). De noche conviene pedir un radio taxi o remís por teléfono. También funcionan aplicaciones de viaje.',
+      categoria: { key: 'amenity', value: 'taxi' },
+      lugares: [
+        { nombre: 'Taxis y remises - Terminal de Ómnibus', direccion: 'Av. Hipólito Yrigoyen, junto al Parque San Martín', lat: -24.7990, lng: -65.4000 },
+        { nombre: 'Taxis y remises - Aeropuerto', direccion: 'Aeropuerto Martín Miguel de Güemes', lat: -24.8560, lng: -65.4860 }
+      ] },
 
     { keywords: ['terminal','ómnibus','omnibus','bus station','micro'],
-      respuesta_es: 'La Terminal de Ómnibus está en Av. Hipólito Yrigoyen 950. Ahí salen micros a todo el país y al norte argentino.',
+      respuesta_es: 'La Terminal de Ómnibus está sobre Av. Hipólito Yrigoyen, a una cuadra del Parque San Martín y a unas 8 cuadras de la Plaza 9 de Julio. Ahí salen micros a todo el país, a Jujuy, Cafayate, Cachi y otros pueblos. Desde el centro se llega caminando, en taxi o en colectivo.',
       categoria: { key: 'amenity', value: 'bus_station' },
       lugares: [
-        { nombre: 'Terminal de Ómnibus de Salta', direccion: 'Av. Hipólito Yrigoyen 950', lat: -24.7990, lng: -65.4000 }
+        { nombre: 'Terminal de Ómnibus de Salta', direccion: 'Av. Hipólito Yrigoyen, junto al Parque San Martín', lat: -24.7990, lng: -65.4000 }
       ] },
 
     { keywords: ['aeropuerto','airport','vuelo','avión','vuelos'],
-      respuesta_es: 'El Aeropuerto Internacional Martín Miguel de Güemes está a 8 km del centro, sobre Ruta 51. Hay taxis y remises en la puerta. También podés tomar el colectivo 8A.',
+      respuesta_es: 'El Aeropuerto Internacional Martín Miguel de Güemes está a 8 km del centro, sobre Ruta 51. Para ir al centro hay mostradores de taxis y remises con tarifa fija dentro del aeropuerto (unos 20 a 30 minutos). La opción más barata es el colectivo SAETA línea 8A, que pasa por el aeropuerto, la Terminal de Ómnibus y el centro; se paga con tarjeta SAETA (la SUBE no sirve) y tarda bastante más.',
       categoria: { key: 'aeroway', value: 'aerodrome' },
       lugares: [
         { nombre: 'Aeropuerto Martín Miguel de Güemes', direccion: 'Ruta 51, Km 5', lat: -24.8560, lng: -65.4860 }
@@ -424,7 +428,7 @@ const INTENTS = [
       lugares: [
         { nombre: 'Baños públicos Galería Paseo del Cabildo', direccion: 'Caseros 521', lat: -24.7884, lng: -65.4100 },
         { nombre: 'Baños públicos Plaza 9 de Julio', direccion: 'Plaza 9 de Julio', lat: -24.7887, lng: -65.4103 },
-        { nombre: 'Baños Terminal de Ómnibus', direccion: 'Av. Hipólito Yrigoyen 950', lat: -24.7990, lng: -65.4000 }
+        { nombre: 'Baños Terminal de Ómnibus', direccion: 'Av. Hipólito Yrigoyen, junto al Parque San Martín', lat: -24.7990, lng: -65.4000 }
       ] },
 
     // ==== UNIVERSIDADES ====
@@ -435,6 +439,11 @@ const INTENTS = [
         { nombre: 'Universidad Nacional de Salta', direccion: 'Av. Bolivia 5150', lat: -24.7730, lng: -65.4170 },
         { nombre: 'UCASAL', direccion: 'Pellegrini 790', lat: -24.7860, lng: -65.4060 }
       ] },
+    // ==== COLECTIVO ====
+    { keywords: ['colectivo','colectivos','bondi','autobus','autobús','bus urbano','que colectivo','qué colectivo','que linea','qué línea','que linea tomo','qué línea tomo','parada de colectivo','paradas de colectivo','donde paso el colectivo','8a','which bus','bus stop','public bus','city bus','bushaltestelle','arrêt de bus','ônibus','parada de ônibus','fermata autobus'],
+      respuesta_es: 'Los colectivos urbanos son de SAETA. Se paga solo con la tarjeta SAETA (la SUBE no funciona en Salta), que se compra y se carga en kioscos y en los centros de atención de SAETA. Para saber qué línea tomar, en cada lugar de la lista tocá "🚌 En colectivo" y te muestra el recorrido. Del Aeropuerto al centro va la línea 8A, que pasa también por la Terminal. De noche hay menos frecuencia: después de las 22.30 conviene un taxi o remís. Te muestro las paradas más cercanas.',
+      categoria: { key: 'highway', value: 'bus_stop' } },
+
     // ==== DINERO ====
     { keywords: ['casa de cambio','casas de cambio','cambiar dinero','cambiar plata','cambiar dolares','cambiar dólares','cambiar euros','cambiar reales','cambio de moneda','dolar','dólar','dolares','dólares','euros','reales','money exchange','exchange money','change money','currency exchange','exchange office','wechselstube','geld wechseln','bureau de change','cambio valuta','casa de câmbio','trocar dinheiro'],
       respuesta_es: 'Para cambiar dólares, euros o reales podés ir a una casa de cambio del centro, como Cambio/Exchange en España 604, o a un banco con tu pasaporte (lunes a viernes por la mañana). Llevá billetes en buen estado: suelen rechazar los rotos, manchados o escritos. Western Union y otras agencias de envíos también te dan pesos. En la ciudad casi todos aceptan tarjeta; en los pueblos conviene llevar efectivo.',
@@ -1213,7 +1222,8 @@ const CATEGORY_TAGS = {
     'shop=car_repair':        [['shop', 'car_repair']],
     'amenity=veterinary':     [['amenity', 'veterinary']],
     'shop=kiosk':             [['shop', 'kiosk|convenience|newsagent']],
-    'shop=hardware':          [['shop', 'hardware|doityourself']]
+    'shop=hardware':          [['shop', 'hardware|doityourself']],
+    'highway=bus_stop':       [['highway', 'bus_stop'], ['public_transport', 'platform']]
 };
 
 // Nombre en español para cada tipo de lugar (cuando OSM no tiene nombre)
@@ -1233,7 +1243,8 @@ const TYPE_LABELS = {
     travel_agent: 'Agencia de turismo', diplomatic: 'Consulado', embassy: 'Consulado', dentist: 'Dentista',
     optician: 'Óptica', wine: 'Vinoteca', alcohol: 'Vinoteca', winery: 'Bodega', park: 'Parque', garden: 'Jardín',
     vegetarian: 'Comida vegetariana', gluten_free: 'Sin TACC', tyres: 'Gomería', car_repair: 'Taller mecánico',
-    veterinary: 'Veterinaria', kiosk: 'Kiosco', newsagent: 'Kiosco', hardware: 'Ferretería', doityourself: 'Ferretería'
+    veterinary: 'Veterinaria', kiosk: 'Kiosco', newsagent: 'Kiosco', hardware: 'Ferretería', doityourself: 'Ferretería',
+    bus_stop: 'Parada de colectivo', platform: 'Parada de colectivo'
 };
 
 const OVERPASS_MIRRORS = [
@@ -1337,7 +1348,7 @@ function toPlace(el, userLat, userLng) {
     const lng = el.lon ?? (el.center && el.center.lon);
     if (lat == null || lng == null) return null;
     const t = el.tags || {};
-    const type = t.amenity || t.healthcare || t.shop || t.tourism || t.office || t.leisure || t.craft || t.vending || t.historic || '';
+    const type = t.amenity || t.healthcare || t.shop || t.tourism || t.office || t.leisure || t.craft || t.vending || t.historic || t.highway || t.public_transport || '';
     const label = TYPE_LABELS[type] || '';
     const calle = t['addr:street'] ? `${t['addr:street']} ${t['addr:housenumber'] || ''}`.trim() : '';
     return {
@@ -1373,6 +1384,9 @@ function formatDistancia(m) {
     return `${dist} · ${tiempo}`;
 }
 
+function linkColectivo(p) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=transit`;
+}
 function linkComoLlegar(p) {
     const mode = p.distancia != null && p.distancia > 2500 ? 'driving' : 'walking';
     return `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=${mode}`;
@@ -1740,6 +1754,7 @@ async function showIntentResponse(intent, userLat, userLng, targetLang, opts = {
                     ${TOURIST_VALUES.has(value) ? '<button type="button" class="btn-mini btn-historia">📖 Historia</button>' : ''}
                     <button type="button" class="btn-mini btn-qr">📱 Mostrar QR</button>
                     <a class="btn-mini" href="${linkComoLlegar(l)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>
+                    ${l.distancia == null || (l.distancia > 900 && l.distancia < 40000) ? `<a class="btn-mini btn-bus" href="${linkColectivo(l)}" target="_blank" rel="noopener">🚌 En colectivo</a>` : ''}
                     ${tel ? `<a class="btn-mini" href="tel:${tel.replace(/[^\d+]/g, '')}">📞 Llamar</a>` : ''}
                 </div>
                 <div class="lugar-historia hidden"></div>
