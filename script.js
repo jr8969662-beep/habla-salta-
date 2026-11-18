@@ -2042,7 +2042,7 @@ async function handleTranslate() {
                 return;
             } else if (palabras >= 3 && CONFIG.languages[r.detected]) {
                 aviso = `Parece ${langName(r.detected).toLowerCase()}, no ${langName(langCode).toLowerCase()}: cambié el idioma.`;
-                idiomaSelect.value = r.detected;
+                elegirIdioma(r.detected);
                 idiomaSelect.dispatchEvent(new Event('change'));
             } else {
                 // Frase corta: la detección no es segura, se respeta el idioma elegido
@@ -2166,21 +2166,89 @@ btnCopiar.addEventListener('click', () => {
 
 
 // ===== Selector de idiomas =====
+// Elige la opción principal del idioma (hay varias opciones por idioma: un país en cada una)
+function elegirIdioma(code) {
+    const ops = [...idiomaSelect.options];
+    const i = ops.findIndex(o => o.value === code && o.dataset.principal) >= 0
+        ? ops.findIndex(o => o.value === code && o.dataset.principal)
+        : ops.findIndex(o => o.value === code);
+    if (i >= 0) idiomaSelect.selectedIndex = i;
+}
 (function setupLanguages() {
+    // País en español al lado de la bandera, y entre paréntesis el idioma.
+    // [bandera, país, índice del país para la hora del turista]
+    const PAIS = {
+        en: ['🇬🇧', 'Reino Unido', 2], pt: ['🇧🇷', 'Brasil', 0], fr: ['🇫🇷', 'Francia', 0], de: ['🇩🇪', 'Alemania', 0],
+        it: ['🇮🇹', 'Italia', 0], nl: ['🇳🇱', 'Países Bajos', 0], pl: ['🇵🇱', 'Polonia'], sv: ['🇸🇪', 'Suecia', 0],
+        da: ['🇩🇰', 'Dinamarca'], no: ['🇳🇴', 'Noruega'], fi: ['🇫🇮', 'Finlandia'], cs: ['🇨🇿', 'Chequia'],
+        el: ['🇬🇷', 'Grecia', 0], ro: ['🇷🇴', 'Rumania', 0], hu: ['🇭🇺', 'Hungría'], ca: ['🇪🇸', 'Cataluña, España', 0],
+        eu: ['🇪🇸', 'País Vasco, España', 0], gl: ['🇪🇸', 'Galicia, España'], hr: ['🇭🇷', 'Croacia'], sr: ['🇷🇸', 'Serbia', 0],
+        bs: ['🇧🇦', 'Bosnia y Herzegovina'], sk: ['🇸🇰', 'Eslovaquia'], sl: ['🇸🇮', 'Eslovenia'], bg: ['🇧🇬', 'Bulgaria'],
+        mk: ['🇲🇰', 'Macedonia del Norte'], sq: ['🇦🇱', 'Albania', 0], lt: ['🇱🇹', 'Lituania'], lv: ['🇱🇻', 'Letonia'],
+        et: ['🇪🇪', 'Estonia'], is: ['🇮🇸', 'Islandia'], ga: ['🇮🇪', 'Irlanda'], cy: ['🏴', 'Gales'], mt: ['🇲🇹', 'Malta'],
+        lb: ['🇱🇺', 'Luxemburgo'], be: ['🇧🇾', 'Bielorrusia'], uk: ['🇺🇦', 'Ucrania'], ru: ['🇷🇺', 'Rusia', 0],
+        tr: ['🇹🇷', 'Turquía', 0], he: ['🇮🇱', 'Israel'], ar: ['🇸🇦', 'Arabia Saudita', 0], hi: ['🇮🇳', 'India'],
+        zh: ['🇨🇳', 'China', 0], ja: ['🇯🇵', 'Japón'], ko: ['🇰🇷', 'Corea del Sur'], th: ['🇹🇭', 'Tailandia'],
+        vi: ['🇻🇳', 'Vietnam'], id: ['🇮🇩', 'Indonesia'], ms: ['🇲🇾', 'Malasia', 0], tl: ['🇵🇭', 'Filipinas'],
+        bn: ['🇧🇩', 'Bangladés', 0], ur: ['🇵🇰', 'Pakistán'], fa: ['🇮🇷', 'Irán', 0], hy: ['🇦🇲', 'Armenia'],
+        ka: ['🇬🇪', 'Georgia'], az: ['🇦🇿', 'Azerbaiyán'], kk: ['🇰🇿', 'Kazajistán'], uz: ['🇺🇿', 'Uzbekistán'],
+        ne: ['🇳🇵', 'Nepal'], ta: ['🇮🇳', 'India', 0], sw: ['🇰🇪', 'Kenia', 0], af: ['🇿🇦', 'Sudáfrica'],
+        am: ['🇪🇹', 'Etiopía'], ht: ['🇭🇹', 'Haití'], qu: ['🇵🇪', 'Perú', 0], ay: ['🇧🇴', 'Bolivia', 0], gn: ['🇵🇾', 'Paraguay']
+    };
+    // Otros países donde se habla el mismo idioma (eligen el idioma y la hora de ese país)
+    const OTROS = [
+        ['en', '🇺🇸', 'Estados Unidos', 0], ['en', '🇨🇦', 'Canadá', 3], ['en', '🇦🇺', 'Australia', 4], ['en', '🇳🇿', 'Nueva Zelanda', 6],
+        ['en', '🇸🇬', 'Singapur', 12], ['pt', '🇵🇹', 'Portugal', 2], ['pt', '🇦🇴', 'Angola', 3], ['pt', '🇲🇿', 'Mozambique', 4],
+        ['fr', '🇧🇪', 'Bélgica', 2], ['fr', '🇨🇭', 'Suiza', 3], ['fr', '🇨🇦', 'Canadá (Quebec)', 1], ['fr', '🇸🇳', 'Senegal', 6],
+        ['de', '🇦🇹', 'Austria', 1], ['de', '🇨🇭', 'Suiza', 2], ['it', '🇨🇭', 'Suiza (Lugano)', 1], ['nl', '🇧🇪', 'Bélgica (Flandes)', 1],
+        ['nl', '🇸🇷', 'Surinam', 2], ['el', '🇨🇾', 'Chipre', 1], ['ro', '🇲🇩', 'Moldavia', 1], ['sv', '🇫🇮', 'Finlandia', 1],
+        ['ar', '🇪🇬', 'Egipto', 2], ['ar', '🇲🇦', 'Marruecos', 3], ['ar', '🇦🇪', 'Emiratos Árabes', 1], ['ar', '🇩🇿', 'Argelia', 4],
+        ['ar', '🇹🇳', 'Túnez', 5], ['ar', '🇱🇧', 'Líbano', 6], ['ar', '🇯🇴', 'Jordania', 7], ['ar', '🇶🇦', 'Catar', 8],
+        ['zh', '🇹🇼', 'Taiwán', 1], ['zh', '🇭🇰', 'Hong Kong', 2], ['ms', '🇸🇬', 'Singapur', 1], ['ta', '🇱🇰', 'Sri Lanka', 1],
+        ['sw', '🇹🇿', 'Tanzania', 1], ['fa', '🇦🇫', 'Afganistán', 1], ['sr', '🇲🇪', 'Montenegro', 1], ['sq', '🇽🇰', 'Kosovo', 1],
+        ['ca', '🇦🇩', 'Andorra', 1], ['qu', '🇧🇴', 'Bolivia', 1], ['ay', '🇵🇪', 'Perú', 1], ['ru', '🇰🇿', 'Kazajistán', 3]
+    ];
     const frag = document.createDocumentFragment();
+    const items = [];
     Object.entries(CONFIG.languages).forEach(([code, cfg]) => {
+        if (code === 'auto' || !PAIS[code]) { items.push({ code, texto: cfg.label || cfg.name, orden: code === 'auto' ? '' : cfg.name }); return; }
+        const [band, pais, idx] = PAIS[code];
+        items.push({ code, texto: `${band} ${pais} (${cfg.name.toLowerCase()})`, orden: pais, idx });
+    });
+    OTROS.forEach(([code, band, pais, idx]) => {
+        const cfg = CONFIG.languages[code];
+        if (cfg) items.push({ code, texto: `${band} ${pais} (${cfg.name.toLowerCase()})`, orden: pais, idx });
+    });
+    items.sort((a, b) => a.orden.localeCompare(b.orden, 'es'));
+    items.forEach(({ code, texto, idx }) => {
         const opt = document.createElement('option');
         opt.value = code;
-        opt.textContent = cfg.label || cfg.name;
+        opt.textContent = texto;
+        if (idx != null) opt.dataset.pais = idx;
+        if (PAIS[code] && texto.startsWith(PAIS[code][0] + ' ' + PAIS[code][1] + ' (')) opt.dataset.principal = '1';
         frag.appendChild(opt);
+    });
+    // Al elegir un país, la hora del turista usa ese país
+    idiomaSelect.addEventListener('change', () => {
+        const o = idiomaSelect.options[idiomaSelect.selectedIndex];
+        if (o && o.dataset.pais != null) {
+            try { localStorage.setItem('hsPais_' + o.value, o.dataset.pais); } catch (e) {}
+        }
     });
     idiomaSelect.appendChild(frag);
     try {
         const saved = localStorage.getItem('hablaSaltaIdioma');
-        if (saved && CONFIG.languages[saved]) idiomaSelect.value = saved;
+        const savedTxt = localStorage.getItem('hablaSaltaIdiomaOpcion');
+        if (saved && CONFIG.languages[saved]) {
+            const exacta = [...idiomaSelect.options].findIndex(o => o.value === saved && o.textContent === savedTxt);
+            if (exacta >= 0) idiomaSelect.selectedIndex = exacta; else elegirIdioma(saved);
+        }
     } catch (e) {}
     idiomaSelect.addEventListener('change', () => {
-        try { localStorage.setItem('hablaSaltaIdioma', idiomaSelect.value); } catch (e) {}
+        try {
+            localStorage.setItem('hablaSaltaIdioma', idiomaSelect.value);
+            localStorage.setItem('hablaSaltaIdiomaOpcion', idiomaSelect.options[idiomaSelect.selectedIndex].textContent);
+        } catch (e) {}
         if (idiomaSelect.value !== 'auto') lastVisitorLang = idiomaSelect.value;
     });
 })();
