@@ -1002,3 +1002,15 @@ a.resp-tel { color: var(--azul-claro); font-weight: 600; text-decoration: none; 
 .cp-pie { margin: 8px 0 0; font-size: .74rem; opacity: .65; }
 header { padding-left: calc(146px + env(safe-area-inset-left, 0px)); padding-right: calc(60px + env(safe-area-inset-right, 0px)); }
 @media (max-width: 380px) { header h1 { font-size: 1.22rem; } }
+
+/* --- Hora en Salta y en el país del turista --- */
+.hora-turista { margin: 8px 2px 0; font-size: .88rem; color: var(--gris-texto); line-height: 1.5; }
+.hora-turista[hidden] { display: none; }
+.hora-turista b { color: var(--azul-oscuro); }
+.hora-dif { opacity: .8; }
+.hora-pais-wrap { position: relative; display: inline-block; font-weight: 700; color: var(--azul-claro);
+    border-bottom: 1.5px dashed var(--azul-claro); cursor: pointer; white-space: nowrap; }
+.hora-pais { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: none; font-size: 16px; }
+
+.hora-pais-fijo { font-weight: 700; color: var(--azul-oscuro); }
+.cp-sol { margin: -4px 0 8px; font-size: .84rem; }

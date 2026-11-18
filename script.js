@@ -2391,6 +2391,7 @@ textoEntrada.addEventListener('input', e => {
                 `${x.lluvia >= 30 ? `<span class="cd-ll">💧 ${x.lluvia}%</span>` : '<span class="cd-ll"></span>'}</li>`;
         }).join('');
         const hace = Math.round((Date.now() - d.t) / 60000);
+        const hoy = (d.dias || [])[0];
         panel.innerHTML = `
             <div class="cp-head">
                 <span class="cp-ic">${ic}</span>
@@ -2398,6 +2399,7 @@ textoEntrada.addEventListener('input', e => {
             </div>
             <p class="cp-lugar">📍 ${escapeHtml(lugar(d))}</p>
             <p class="cp-det">Sensación ${Math.round(d.actual.sensacion)}° · Humedad ${d.actual.humedad}% · Viento ${Math.round(d.actual.viento)} km/h</p>
+            <p class="cp-sol">🕘 ${new Date().toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Salta', hour: '2-digit', minute: '2-digit', hour12: false })} en Salta${hoy && hoy.sale ? ` · 🌅 ${hoy.sale.slice(11, 16)} · 🌇 ${hoy.pone.slice(11, 16)}` : ''}</p>
             <ul class="cp-dias">${dias}</ul>
             <p class="cp-pie">${viejo || !navigator.onLine ? `Último dato de hace ${hace >= 120 ? Math.round(hace / 60) + ' h' : hace + ' min'}` : 'Actualizado'} · Open-Meteo</p>`;
     }
@@ -2415,7 +2417,7 @@ textoEntrada.addEventListener('input', e => {
         try {
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${donde.lat.toFixed(3)}&longitude=${donde.lng.toFixed(3)}` +
                 '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day' +
-                '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=4&timezone=auto';
+                '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=4&timezone=auto';
             const res = await fetchWithTimeout(url, 8000);
             if (!res.ok) throw new Error('clima ' + res.status);
             const j = await res.json();
@@ -2425,7 +2427,8 @@ textoEntrada.addEventListener('input', e => {
                 actual: { temp: c.temperature_2m, sensacion: c.apparent_temperature, humedad: c.relative_humidity_2m,
                           codigo: c.weather_code, viento: c.wind_speed_10m, dia: c.is_day === 1 },
                 dias: (dl.time || []).map((f, i) => ({ fecha: f, codigo: dl.weather_code[i], max: dl.temperature_2m_max[i],
-                    min: dl.temperature_2m_min[i], lluvia: (dl.precipitation_probability_max || [])[i] ?? 0 }))
+                    min: dl.temperature_2m_min[i], lluvia: (dl.precipitation_probability_max || [])[i] ?? 0,
+                    sale: (dl.sunrise || [])[i] || '', pone: (dl.sunset || [])[i] || '' }))
             };
             guardar(d);
             pintar(d);
@@ -2450,4 +2453,65 @@ textoEntrada.addEventListener('input', e => {
     setInterval(() => actualizar(), 30 * 60 * 1000);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') actualizar(); });
     window.addEventListener('online', () => actualizar(true));
+})();
+
+// ===== Hora en Salta y en el país del turista (debajo del idioma) =====
+(function horaTurista() {
+    const el = document.getElementById('hora-turista');
+    if (!el) return;
+    const TZ_SALTA = 'America/Argentina/Salta';
+    const PAISES = {
+        en: [['Estados Unidos (Nueva York)', 'America/New_York'], ['Estados Unidos (Los Ángeles)', 'America/Los_Angeles'],
+             ['Reino Unido', 'Europe/London'], ['Canadá (Toronto)', 'America/Toronto'], ['Australia (Sídney)', 'Australia/Sydney'], ['Irlanda', 'Europe/Dublin']],
+        pt: [['Brasil', 'America/Sao_Paulo'], ['Portugal', 'Europe/Lisbon']],
+        fr: [['Francia', 'Europe/Paris'], ['Canadá (Montreal)', 'America/Toronto'], ['Bélgica', 'Europe/Brussels'], ['Suiza', 'Europe/Zurich']],
+        de: [['Alemania', 'Europe/Berlin'], ['Austria', 'Europe/Vienna'], ['Suiza', 'Europe/Zurich']],
+        it: [['Italia', 'Europe/Rome']], nl: [['Países Bajos', 'Europe/Amsterdam'], ['Bélgica', 'Europe/Brussels']],
+        pl: [['Polonia', 'Europe/Warsaw']], sv: [['Suecia', 'Europe/Stockholm']], da: [['Dinamarca', 'Europe/Copenhagen']],
+        no: [['Noruega', 'Europe/Oslo']], fi: [['Finlandia', 'Europe/Helsinki']], cs: [['Chequia', 'Europe/Prague']],
+        el: [['Grecia', 'Europe/Athens']], ro: [['Rumania', 'Europe/Bucharest']], hu: [['Hungría', 'Europe/Budapest']],
+        uk: [['Ucrania', 'Europe/Kyiv']], ru: [['Rusia (Moscú)', 'Europe/Moscow']], tr: [['Turquía', 'Europe/Istanbul']],
+        he: [['Israel', 'Asia/Jerusalem']],
+        ar: [['Arabia Saudita', 'Asia/Riyadh'], ['Emiratos Árabes', 'Asia/Dubai'], ['Egipto', 'Africa/Cairo'], ['Marruecos', 'Africa/Casablanca']],
+        hi: [['India', 'Asia/Kolkata']], zh: [['China', 'Asia/Shanghai'], ['Taiwán', 'Asia/Taipei']], ja: [['Japón', 'Asia/Tokyo']],
+        ko: [['Corea del Sur', 'Asia/Seoul']], th: [['Tailandia', 'Asia/Bangkok']], vi: [['Vietnam', 'Asia/Ho_Chi_Minh']],
+        id: [['Indonesia (Yakarta)', 'Asia/Jakarta']], qu: [['Perú', 'America/Lima'], ['Bolivia', 'America/La_Paz']],
+        ay: [['Bolivia', 'America/La_Paz'], ['Perú', 'America/Lima']], gn: [['Paraguay', 'America/Asuncion']]
+    };
+    const elegido = lang => { try { return parseInt(localStorage.getItem('hsPais_' + lang), 10) || 0; } catch (e) { return 0; } };
+    const hora = tz => new Date().toLocaleTimeString('es-AR', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+    // Fecha "relojes de pared" de una zona, para comparar horas y días
+    const enZona = tz => new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+
+    function diferencia(tz) {
+        const a = enZona(TZ_SALTA), b = enZona(tz);
+        const min = Math.round((b - a) / 60000);
+        const dia = b.getDate() !== a.getDate() ? (b > a ? ', ya es mañana' : ', todavía es ayer') : '';
+        if (min === 0) return 'misma hora';
+        const h = Math.floor(Math.abs(min) / 60), m = Math.abs(min) % 60;
+        return `${min > 0 ? '+' : '−'}${h} h${m ? ` ${m} min` : ''}${dia}`;
+    }
+
+    function pintar() {
+        const lang = idiomaSelect.value;
+        const lista = PAISES[lang];
+        if (!lista) { el.hidden = true; return; }
+        const i = Math.min(elegido(lang), lista.length - 1);
+        const [pais, tz] = lista[i];
+        let horaPais;
+        try { horaPais = hora(tz); } catch (e) { el.hidden = true; return; }
+        const selector = lista.length > 1
+            ? `<span class="hora-pais-wrap">${escapeHtml(pais)} ▾<select class="hora-pais" aria-label="País del turista">${lista.map(([n], k) => `<option value="${k}"${k === i ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('')}</select></span>`
+            : `<span class="hora-pais-fijo">${escapeHtml(pais)}</span>`;
+        el.innerHTML = `🕘 En Salta: <b>${hora(TZ_SALTA)}</b> · En ${selector}: <b>${horaPais}</b> <span class="hora-dif">(${escapeHtml(diferencia(tz))})</span>`;
+        el.hidden = false;
+        const sel = el.querySelector('select');
+        if (sel) sel.addEventListener('change', () => {
+            try { localStorage.setItem('hsPais_' + lang, sel.value); } catch (e) {}
+            pintar();
+        });
+    }
+    idiomaSelect.addEventListener('change', pintar);
+    pintar();
+    setInterval(() => { if (!el.querySelector('select:focus')) pintar(); }, 30000);
 })();
