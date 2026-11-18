@@ -20,6 +20,26 @@ const CONFIG = {
         'el': { source: 'el', name: 'Griego', label: "🇬🇷 Ελληνικά", speech: 'el-GR' },
         'ro': { source: 'ro', name: 'Rumano', label: "🇷🇴 Română", speech: 'ro-RO' },
         'hu': { source: 'hu', name: 'Húngaro', label: "🇭🇺 Magyar", speech: 'hu-HU' },
+        'ca': { source: 'ca', name: 'Catalán', label: "🇪🇸 Català", speech: 'ca-ES' },
+        'eu': { source: 'eu', name: 'Euskera', label: "🇪🇸 Euskara", speech: 'eu-ES' },
+        'gl': { source: 'gl', name: 'Gallego', label: "🇪🇸 Galego", speech: 'gl-ES' },
+        'hr': { source: 'hr', name: 'Croata', label: "🇭🇷 Hrvatski", speech: 'hr-HR' },
+        'sr': { source: 'sr', name: 'Serbio', label: "🇷🇸 Српски", speech: 'sr-RS' },
+        'bs': { source: 'bs', name: 'Bosnio', label: "🇧🇦 Bosanski", speech: 'bs-BA' },
+        'sk': { source: 'sk', name: 'Eslovaco', label: "🇸🇰 Slovenčina", speech: 'sk-SK' },
+        'sl': { source: 'sl', name: 'Esloveno', label: "🇸🇮 Slovenščina", speech: 'sl-SI' },
+        'bg': { source: 'bg', name: 'Búlgaro', label: "🇧🇬 Български", speech: 'bg-BG' },
+        'mk': { source: 'mk', name: 'Macedonio', label: "🇲🇰 Македонски", speech: 'mk-MK' },
+        'sq': { source: 'sq', name: 'Albanés', label: "🇦🇱 Shqip", speech: 'sq-AL' },
+        'lt': { source: 'lt', name: 'Lituano', label: "🇱🇹 Lietuvių", speech: 'lt-LT' },
+        'lv': { source: 'lv', name: 'Letón', label: "🇱🇻 Latviešu", speech: 'lv-LV' },
+        'et': { source: 'et', name: 'Estonio', label: "🇪🇪 Eesti", speech: 'et-EE' },
+        'is': { source: 'is', name: 'Islandés', label: "🇮🇸 Íslenska", speech: 'is-IS' },
+        'ga': { source: 'ga', name: 'Irlandés', label: "🇮🇪 Gaeilge", speech: 'ga-IE' },
+        'cy': { source: 'cy', name: 'Galés', label: "🏴 Cymraeg", speech: 'cy-GB' },
+        'mt': { source: 'mt', name: 'Maltés', label: "🇲🇹 Malti", speech: 'mt-MT' },
+        'lb': { source: 'lb', name: 'Luxemburgués', label: "🇱🇺 Lëtzebuergesch", speech: 'lb-LU' },
+        'be': { source: 'be', name: 'Bielorruso', label: "🇧🇾 Беларуская", speech: 'be-BY' },
         'uk': { source: 'uk', name: 'Ucraniano', label: "🇺🇦 Українська", speech: 'uk-UA' },
         'ru': { source: 'ru', name: 'Ruso', label: "🇷🇺 Русский", speech: 'ru-RU' },
         'tr': { source: 'tr', name: 'Turco', label: "🇹🇷 Türkçe", speech: 'tr-TR' },
@@ -32,6 +52,22 @@ const CONFIG = {
         'th': { source: 'th', name: 'Tailandés', label: "🇹🇭 ไทย", speech: 'th-TH' },
         'vi': { source: 'vi', name: 'Vietnamita', label: "🇻🇳 Tiếng Việt", speech: 'vi-VN' },
         'id': { source: 'id', name: 'Indonesio', label: "🇮🇩 Bahasa Indonesia", speech: 'id-ID' },
+        'ms': { source: 'ms', name: 'Malayo', label: "🇲🇾 Bahasa Melayu", speech: 'ms-MY' },
+        'tl': { source: 'tl', name: 'Filipino', label: "🇵🇭 Filipino", speech: 'fil-PH' },
+        'bn': { source: 'bn', name: 'Bengalí', label: "🇧🇩 বাংলা", speech: 'bn-BD' },
+        'ur': { source: 'ur', name: 'Urdu', label: "🇵🇰 اردو", speech: 'ur-PK', rtl: true },
+        'fa': { source: 'fa', name: 'Persa', label: "🇮🇷 فارسی", speech: 'fa-IR', rtl: true },
+        'hy': { source: 'hy', name: 'Armenio', label: "🇦🇲 Հայերեն", speech: 'hy-AM' },
+        'ka': { source: 'ka', name: 'Georgiano', label: "🇬🇪 ქართული", speech: 'ka-GE' },
+        'az': { source: 'az', name: 'Azerí', label: "🇦🇿 Azərbaycanca", speech: 'az-AZ' },
+        'kk': { source: 'kk', name: 'Kazajo', label: "🇰🇿 Қазақ", speech: 'kk-KZ' },
+        'uz': { source: 'uz', name: 'Uzbeko', label: "🇺🇿 Oʻzbek", speech: 'uz-UZ' },
+        'ne': { source: 'ne', name: 'Nepalí', label: "🇳🇵 नेपाली", speech: 'ne-NP' },
+        'ta': { source: 'ta', name: 'Tamil', label: "🇮🇳 தமிழ்", speech: 'ta-IN' },
+        'sw': { source: 'sw', name: 'Suajili', label: "🇰🇪 Kiswahili", speech: 'sw-KE' },
+        'af': { source: 'af', name: 'Afrikáans', label: "🇿🇦 Afrikaans", speech: 'af-ZA' },
+        'am': { source: 'am', name: 'Amhárico', label: "🇪🇹 አማርኛ", speech: 'am-ET' },
+        'ht': { source: 'ht', name: 'Criollo haitiano', label: "🇭🇹 Kreyòl ayisyen", speech: 'ht-HT' },
         'qu': { source: 'qu', name: 'Quechua', label: "🏔️ Runasimi (Quechua)", speech: null },
         'ay': { source: 'ay', name: 'Aimara', label: "🏔️ Aymar aru (Aimara)", speech: null },
         'gn': { source: 'gn', name: 'Guaraní', label: "🇵🇾 Avañe'ẽ (Guaraní)", speech: null }
@@ -611,6 +647,8 @@ const ANDROID = window.HablaAndroid || null;
 
 // ----- Traductor y detector sin internet (solo dentro de la app Android) -----
 const NATIVE_OFFLINE = !!(ANDROID && typeof ANDROID.translateOffline === 'function');
+// Idiomas que el traductor del teléfono (sin internet) no tiene
+const SIN_TRADUCTOR_OFFLINE = new Set(['qu', 'ay', 'gn', 'eu', 'sr', 'bs', 'lb', 'hy', 'az', 'kk', 'uz', 'ne', 'am']);
 const nativeCalls = {};
 let nativeSeq = 0;
 
@@ -639,7 +677,7 @@ function nativeCall(fn, args, timeoutMs = 30000) {
 
 function nativeErrorMessage(e) {
     const m = String((e && e.message) || e);
-    if (m.startsWith('unsupported')) return 'Este idioma no se puede traducir sin internet (quechua, aimara y guaraní necesitan conexión).';
+    if (m.startsWith('unsupported')) return 'Este idioma no se puede traducir sin internet: necesita conexión.';
     if (m === 'model-missing') return 'Para traducir sin internet, descargá el idioma con el botón ⬇️ cuando tengas conexión.';
     if (m === 'timeout') return 'El traductor tardó demasiado. Probá de nuevo.';
     return 'No se pudo traducir sin internet.';
@@ -2462,21 +2500,35 @@ textoEntrada.addEventListener('input', e => {
     const TZ_SALTA = 'America/Argentina/Salta';
     const PAISES = {
         en: [['Estados Unidos (Nueva York)', 'America/New_York'], ['Estados Unidos (Los Ángeles)', 'America/Los_Angeles'],
-             ['Reino Unido', 'Europe/London'], ['Canadá (Toronto)', 'America/Toronto'], ['Australia (Sídney)', 'Australia/Sydney'], ['Irlanda', 'Europe/Dublin']],
-        pt: [['Brasil', 'America/Sao_Paulo'], ['Portugal', 'Europe/Lisbon']],
-        fr: [['Francia', 'Europe/Paris'], ['Canadá (Montreal)', 'America/Toronto'], ['Bélgica', 'Europe/Brussels'], ['Suiza', 'Europe/Zurich']],
-        de: [['Alemania', 'Europe/Berlin'], ['Austria', 'Europe/Vienna'], ['Suiza', 'Europe/Zurich']],
-        it: [['Italia', 'Europe/Rome']], nl: [['Países Bajos', 'Europe/Amsterdam'], ['Bélgica', 'Europe/Brussels']],
-        pl: [['Polonia', 'Europe/Warsaw']], sv: [['Suecia', 'Europe/Stockholm']], da: [['Dinamarca', 'Europe/Copenhagen']],
+             ['Reino Unido', 'Europe/London'], ['Canadá (Toronto)', 'America/Toronto'], ['Australia (Sídney)', 'Australia/Sydney'], ['Irlanda', 'Europe/Dublin'], ['Nueva Zelanda', 'Pacific/Auckland'],
+             ['Sudáfrica', 'Africa/Johannesburg'], ['Escocia (Reino Unido)', 'Europe/London'], ['Estados Unidos (Chicago)', 'America/Chicago'], ['Estados Unidos (Miami)', 'America/New_York'], ['Canadá (Vancouver)', 'America/Vancouver'], ['Singapur', 'Asia/Singapore'], ['India', 'Asia/Kolkata']],
+        pt: [['Brasil', 'America/Sao_Paulo'], ['Brasil (Manaos)', 'America/Manaus'], ['Portugal', 'Europe/Lisbon'], ['Angola', 'Africa/Luanda'], ['Mozambique', 'Africa/Maputo'], ['Cabo Verde', 'Atlantic/Cape_Verde']],
+        fr: [['Francia', 'Europe/Paris'], ['Canadá (Montreal)', 'America/Toronto'], ['Bélgica', 'Europe/Brussels'], ['Suiza', 'Europe/Zurich'], ['Luxemburgo', 'Europe/Luxembourg'], ['Mónaco', 'Europe/Monaco'], ['Senegal', 'Africa/Dakar'], ['Marruecos', 'Africa/Casablanca']],
+        de: [['Alemania', 'Europe/Berlin'], ['Austria', 'Europe/Vienna'], ['Suiza', 'Europe/Zurich'], ['Liechtenstein', 'Europe/Vaduz'], ['Luxemburgo', 'Europe/Luxembourg']],
+        it: [['Italia', 'Europe/Rome'], ['Suiza (Lugano)', 'Europe/Zurich'], ['San Marino', 'Europe/San_Marino']], nl: [['Países Bajos', 'Europe/Amsterdam'], ['Bélgica', 'Europe/Brussels'], ['Surinam', 'America/Paramaribo']],
+        pl: [['Polonia', 'Europe/Warsaw']], sv: [['Suecia', 'Europe/Stockholm'], ['Finlandia', 'Europe/Helsinki']], da: [['Dinamarca', 'Europe/Copenhagen']],
         no: [['Noruega', 'Europe/Oslo']], fi: [['Finlandia', 'Europe/Helsinki']], cs: [['Chequia', 'Europe/Prague']],
-        el: [['Grecia', 'Europe/Athens']], ro: [['Rumania', 'Europe/Bucharest']], hu: [['Hungría', 'Europe/Budapest']],
-        uk: [['Ucrania', 'Europe/Kyiv']], ru: [['Rusia (Moscú)', 'Europe/Moscow']], tr: [['Turquía', 'Europe/Istanbul']],
+        el: [['Grecia', 'Europe/Athens'], ['Chipre', 'Asia/Nicosia']], ro: [['Rumania', 'Europe/Bucharest'], ['Moldavia', 'Europe/Chisinau']], hu: [['Hungría', 'Europe/Budapest']],
+        uk: [['Ucrania', 'Europe/Kyiv']], ru: [['Rusia (Moscú)', 'Europe/Moscow'], ['Rusia (San Petersburgo)', 'Europe/Moscow'], ['Rusia (Vladivostok)', 'Asia/Vladivostok'], ['Kazajistán', 'Asia/Almaty']], tr: [['Turquía', 'Europe/Istanbul'], ['Chipre del Norte', 'Asia/Nicosia']],
         he: [['Israel', 'Asia/Jerusalem']],
-        ar: [['Arabia Saudita', 'Asia/Riyadh'], ['Emiratos Árabes', 'Asia/Dubai'], ['Egipto', 'Africa/Cairo'], ['Marruecos', 'Africa/Casablanca']],
-        hi: [['India', 'Asia/Kolkata']], zh: [['China', 'Asia/Shanghai'], ['Taiwán', 'Asia/Taipei']], ja: [['Japón', 'Asia/Tokyo']],
+        ar: [['Arabia Saudita', 'Asia/Riyadh'], ['Emiratos Árabes', 'Asia/Dubai'], ['Egipto', 'Africa/Cairo'], ['Marruecos', 'Africa/Casablanca'], ['Argelia', 'Africa/Algiers'], ['Túnez', 'Africa/Tunis'], ['Líbano', 'Asia/Beirut'], ['Jordania', 'Asia/Amman'], ['Catar', 'Asia/Qatar'], ['Kuwait', 'Asia/Kuwait'], ['Siria', 'Asia/Damascus'], ['Irak', 'Asia/Baghdad']],
+        hi: [['India', 'Asia/Kolkata']], zh: [['China', 'Asia/Shanghai'], ['Taiwán', 'Asia/Taipei'], ['Hong Kong', 'Asia/Hong_Kong'], ['Singapur', 'Asia/Singapore']], ja: [['Japón', 'Asia/Tokyo']],
         ko: [['Corea del Sur', 'Asia/Seoul']], th: [['Tailandia', 'Asia/Bangkok']], vi: [['Vietnam', 'Asia/Ho_Chi_Minh']],
         id: [['Indonesia (Yakarta)', 'Asia/Jakarta']], qu: [['Perú', 'America/Lima'], ['Bolivia', 'America/La_Paz']],
-        ay: [['Bolivia', 'America/La_Paz'], ['Perú', 'America/Lima']], gn: [['Paraguay', 'America/Asuncion']]
+        ay: [['Bolivia', 'America/La_Paz'], ['Perú', 'America/Lima']], gn: [['Paraguay', 'America/Asuncion']],
+        ca: [['España (Barcelona)', 'Europe/Madrid'], ['Andorra', 'Europe/Andorra']], eu: [['España (País Vasco)', 'Europe/Madrid'], ['Francia', 'Europe/Paris']],
+        gl: [['España (Galicia)', 'Europe/Madrid']], hr: [['Croacia', 'Europe/Zagreb']], sr: [['Serbia', 'Europe/Belgrade'], ['Montenegro', 'Europe/Podgorica']],
+        bs: [['Bosnia y Herzegovina', 'Europe/Sarajevo']], sk: [['Eslovaquia', 'Europe/Bratislava']], sl: [['Eslovenia', 'Europe/Ljubljana']],
+        bg: [['Bulgaria', 'Europe/Sofia']], mk: [['Macedonia del Norte', 'Europe/Skopje']], sq: [['Albania', 'Europe/Tirane'], ['Kosovo', 'Europe/Belgrade']],
+        lt: [['Lituania', 'Europe/Vilnius']], lv: [['Letonia', 'Europe/Riga']], et: [['Estonia', 'Europe/Tallinn']],
+        is: [['Islandia', 'Atlantic/Reykjavik']], ga: [['Irlanda', 'Europe/Dublin']], cy: [['Gales (Reino Unido)', 'Europe/London']],
+        mt: [['Malta', 'Europe/Malta']], lb: [['Luxemburgo', 'Europe/Luxembourg']], be: [['Bielorrusia', 'Europe/Minsk']],
+        ms: [['Malasia', 'Asia/Kuala_Lumpur'], ['Singapur', 'Asia/Singapore']], tl: [['Filipinas', 'Asia/Manila']],
+        bn: [['Bangladés', 'Asia/Dhaka'], ['India (Calcuta)', 'Asia/Kolkata']], ur: [['Pakistán', 'Asia/Karachi']], fa: [['Irán', 'Asia/Tehran'], ['Afganistán', 'Asia/Kabul']],
+        hy: [['Armenia', 'Asia/Yerevan']], ka: [['Georgia', 'Asia/Tbilisi']], az: [['Azerbaiyán', 'Asia/Baku']], kk: [['Kazajistán', 'Asia/Almaty']],
+        uz: [['Uzbekistán', 'Asia/Tashkent']], ne: [['Nepal', 'Asia/Kathmandu']], ta: [['India (Chennai)', 'Asia/Kolkata'], ['Sri Lanka', 'Asia/Colombo']],
+        sw: [['Kenia', 'Africa/Nairobi'], ['Tanzania', 'Africa/Dar_es_Salaam']], af: [['Sudáfrica', 'Africa/Johannesburg']], am: [['Etiopía', 'Africa/Addis_Ababa']],
+        ht: [['Haití', 'America/Port-au-Prince']]
     };
     const elegido = lang => { try { return parseInt(localStorage.getItem('hsPais_' + lang), 10) || 0; } catch (e) { return 0; } };
     const hora = tz => new Date().toLocaleTimeString('es-AR', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });

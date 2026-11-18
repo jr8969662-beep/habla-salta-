@@ -300,7 +300,7 @@ async function startOfflineDownload() {
     btn.textContent = '⏸ Pausar descarga';
     btn.classList.add('pausar');
     const lang = idiomaSelect.value !== 'auto' ? idiomaSelect.value : lastVisitorLang;
-    const conTraductor = NATIVE_OFFLINE && lang && !['qu', 'ay', 'gn'].includes(lang);
+    const conTraductor = NATIVE_OFFLINE && lang && !SIN_TRADUCTOR_OFFLINE.has(lang);
     activeSteps = ['app', 'mapa', 'lugares', 'resenas', ...(conTraductor ? ['traductor'] : []), 'frases'];
     Object.keys(stepFrac).forEach(k => delete stepFrac[k]);
     ['app', 'mapa', 'lugares', 'resenas', 'traductor', 'frases'].forEach(s => { setStep(s, ''); setStepDetail(s, ''); });
