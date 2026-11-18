@@ -962,3 +962,43 @@ a.resp-tel { color: var(--azul-claro); font-weight: 600; text-decoration: none; 
 .av-cerrar { background: none; border: none; color: #fff; opacity: .7; font-size: 1rem; width: 32px; height: 32px; cursor: pointer; }
 
 .btn-mini.btn-bus { background: var(--blanco); color: var(--azul-oscuro); border: 1px solid var(--borde); }
+
+/* --- Clima en la barra (al lado del botón de descarga) --- */
+.clima-chip {
+    position: fixed; z-index: 9999;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: calc(60px + env(safe-area-inset-left, 0px));
+    height: 40px; padding: 0 10px 0 8px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255, 255, 255, .16); color: #fff; border: 1px solid rgba(255, 255, 255, .35);
+    font-weight: 800; font-size: .98rem; cursor: pointer; line-height: 1;
+}
+.clima-chip[hidden] { display: none; }
+.clima-chip:hover { background: rgba(255, 255, 255, .26); }
+.clima-chip .clima-icono { font-size: 1.15rem; }
+.clima-chip.viejo { opacity: .7; }
+@media (max-width: 360px) { header h1 { font-size: 1.2rem; } }
+.clima-panel {
+    position: fixed; z-index: 9999;
+    top: calc(62px + env(safe-area-inset-top, 0px)); left: 12px;
+    width: min(calc(100vw - 24px), 320px);
+    background: var(--blanco); color: var(--gris-texto); border: 1px solid var(--borde);
+    border-radius: 18px; box-shadow: 0 14px 40px rgba(0, 0, 0, .3); padding: 14px 16px 12px;
+}
+.clima-panel[hidden] { display: none; }
+.cp-head { display: flex; align-items: center; gap: 12px; }
+.cp-ic { font-size: 2.6rem; line-height: 1; }
+.cp-temp { margin: 0; font-size: 2rem; font-weight: 800; color: var(--azul-oscuro); line-height: 1; }
+.cp-txt { margin: 2px 0 0; font-weight: 600; }
+.cp-lugar { margin: 10px 0 2px; font-size: .88rem; font-weight: 700; color: var(--azul-oscuro); }
+.cp-det { margin: 0 0 8px; font-size: .84rem; }
+.cp-dias { list-style: none; margin: 0; padding: 0; }
+.cp-dias li { display: grid; grid-template-columns: 1fr 28px 78px 52px; align-items: center; padding: 6px 0; border-top: 1px solid var(--borde); font-size: .9rem; }
+.cd-dia { text-transform: capitalize; font-weight: 600; }
+.cd-ic { text-align: center; }
+.cd-t { text-align: right; }
+.cd-t b { color: var(--azul-oscuro); }
+.cd-ll { text-align: right; font-size: .8rem; color: var(--azul-claro); }
+.cp-pie { margin: 8px 0 0; font-size: .74rem; opacity: .65; }
+header { padding-left: calc(146px + env(safe-area-inset-left, 0px)); padding-right: calc(60px + env(safe-area-inset-right, 0px)); }
+@media (max-width: 380px) { header h1 { font-size: 1.22rem; } }

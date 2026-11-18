@@ -2343,3 +2343,111 @@ textoEntrada.addEventListener('input', e => {
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') revisar(); });
     window.addEventListener('online', revisar);
 })();
+
+// ===== Clima arriba a la izquierda (Open-Meteo, sin clave). Usa la ubicación del teléfono o Salta capital =====
+(function clima() {
+    const chip = document.getElementById('clima');
+    const panel = document.getElementById('clima-panel');
+    if (!chip || !panel) return;
+    const SALTA = { lat: -24.7883, lng: -65.4106 };
+    const KEY = 'hablaSaltaClima';
+    // Códigos WMO -> ícono y texto
+    const COD = {
+        0: ['☀️', 'Despejado'], 1: ['🌤️', 'Mayormente despejado'], 2: ['⛅', 'Parcialmente nublado'], 3: ['☁️', 'Nublado'],
+        45: ['🌫️', 'Niebla'], 48: ['🌫️', 'Niebla'], 51: ['🌦️', 'Llovizna'], 53: ['🌦️', 'Llovizna'], 55: ['🌦️', 'Llovizna'],
+        56: ['🌧️', 'Llovizna helada'], 57: ['🌧️', 'Llovizna helada'], 61: ['🌧️', 'Lluvia débil'], 63: ['🌧️', 'Lluvia'],
+        65: ['🌧️', 'Lluvia fuerte'], 66: ['🌧️', 'Lluvia helada'], 67: ['🌧️', 'Lluvia helada'], 71: ['🌨️', 'Nieve débil'],
+        73: ['🌨️', 'Nieve'], 75: ['❄️', 'Nieve fuerte'], 77: ['🌨️', 'Granizo fino'], 80: ['🌦️', 'Chaparrones'],
+        81: ['🌧️', 'Chaparrones'], 82: ['⛈️', 'Chaparrones fuertes'], 85: ['🌨️', 'Nevadas'], 86: ['❄️', 'Nevadas fuertes'],
+        95: ['⛈️', 'Tormenta'], 96: ['⛈️', 'Tormenta con granizo'], 99: ['⛈️', 'Tormenta con granizo']
+    };
+    const icono = (c, dia) => {
+        const x = COD[c] || ['🌡️', ''];
+        if (!dia && (c === 0 || c === 1)) return ['🌙', x[1]];
+        return x;
+    };
+    const leer = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
+    const guardar = d => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} };
+
+    function lugar(d) {
+        return distanciaMetros(d.lat, d.lng, SALTA.lat, SALTA.lng) < 15000 ? 'Salta capital' : (d.propia ? 'Tu ubicación' : 'Salta capital');
+    }
+
+    function pintar(d) {
+        if (!d || !d.actual) return;
+        const [ic, txt] = icono(d.actual.codigo, d.actual.dia);
+        chip.querySelector('.clima-icono').textContent = ic;
+        chip.querySelector('.clima-temp').textContent = `${Math.round(d.actual.temp)}°`;
+        chip.hidden = false;
+        const viejo = Date.now() - d.t > 3 * 3600 * 1000;
+        chip.classList.toggle('viejo', viejo);
+        chip.setAttribute('aria-label', `Clima en ${lugar(d)}: ${Math.round(d.actual.temp)} grados, ${txt}`);
+        const dias = (d.dias || []).map((x, i) => {
+            const [di] = icono(x.codigo, true);
+            const nombre = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' :
+                new Date(x.fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long' });
+            return `<li><span class="cd-dia">${nombre}</span><span class="cd-ic">${di}</span>` +
+                `<span class="cd-t"><b>${Math.round(x.max)}°</b> / ${Math.round(x.min)}°</span>` +
+                `${x.lluvia >= 30 ? `<span class="cd-ll">💧 ${x.lluvia}%</span>` : '<span class="cd-ll"></span>'}</li>`;
+        }).join('');
+        const hace = Math.round((Date.now() - d.t) / 60000);
+        panel.innerHTML = `
+            <div class="cp-head">
+                <span class="cp-ic">${ic}</span>
+                <div><p class="cp-temp">${Math.round(d.actual.temp)}°</p><p class="cp-txt">${escapeHtml(txt)}</p></div>
+            </div>
+            <p class="cp-lugar">📍 ${escapeHtml(lugar(d))}</p>
+            <p class="cp-det">Sensación ${Math.round(d.actual.sensacion)}° · Humedad ${d.actual.humedad}% · Viento ${Math.round(d.actual.viento)} km/h</p>
+            <ul class="cp-dias">${dias}</ul>
+            <p class="cp-pie">${viejo || !navigator.onLine ? `Último dato de hace ${hace >= 120 ? Math.round(hace / 60) + ' h' : hace + ' min'}` : 'Actualizado'} · Open-Meteo</p>`;
+    }
+
+    let cargando = false;
+    async function actualizar(forzar) {
+        const prev = leer();
+        if (prev) pintar(prev);
+        if (cargando || !navigator.onLine) return;
+        const pos = (typeof lastPosition !== 'undefined' && lastPosition) || null;
+        const donde = pos ? { lat: pos.lat, lng: pos.lng, propia: true } : { ...SALTA, propia: false };
+        const mismoLugar = prev && distanciaMetros(prev.lat, prev.lng, donde.lat, donde.lng) < 5000;
+        if (!forzar && prev && mismoLugar && Date.now() - prev.t < 30 * 60 * 1000) return;
+        cargando = true;
+        try {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${donde.lat.toFixed(3)}&longitude=${donde.lng.toFixed(3)}` +
+                '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day' +
+                '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=4&timezone=auto';
+            const res = await fetchWithTimeout(url, 8000);
+            if (!res.ok) throw new Error('clima ' + res.status);
+            const j = await res.json();
+            const c = j.current, dl = j.daily;
+            const d = {
+                t: Date.now(), lat: donde.lat, lng: donde.lng, propia: donde.propia,
+                actual: { temp: c.temperature_2m, sensacion: c.apparent_temperature, humedad: c.relative_humidity_2m,
+                          codigo: c.weather_code, viento: c.wind_speed_10m, dia: c.is_day === 1 },
+                dias: (dl.time || []).map((f, i) => ({ fecha: f, codigo: dl.weather_code[i], max: dl.temperature_2m_max[i],
+                    min: dl.temperature_2m_min[i], lluvia: (dl.precipitation_probability_max || [])[i] ?? 0 }))
+            };
+            guardar(d);
+            pintar(d);
+        } catch (e) {
+            console.warn('Clima:', e);
+        } finally {
+            cargando = false;
+        }
+    }
+
+    chip.addEventListener('click', e => {
+        e.stopPropagation();
+        panel.hidden = !panel.hidden;
+        if (!panel.hidden) actualizar();
+    });
+    document.addEventListener('click', e => { if (!panel.hidden && !panel.contains(e.target)) panel.hidden = true; });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') panel.hidden = true; });
+
+    actualizar();
+    // Cuando llega la ubicación del teléfono, se pide el clima de ahí
+    setTimeout(() => { if (typeof warmPosition === 'function') (warmPosition() || Promise.resolve()).then(() => actualizar()); }, 2500);
+    setInterval(() => actualizar(), 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') actualizar(); });
+    window.addEventListener('online', () => actualizar(true));
+})();
